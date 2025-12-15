@@ -21,6 +21,12 @@ class HabitRepository {
     return Isar.getInstance()!;
   }
 
+// Add this method to watch a single habit by ID
+  Stream<Habit?> watchHabit(int id) async* {
+    final isar = await db;
+    // watchObject emits null if deleted, or the Habit if updated
+    yield* isar.habits.watchObject(id, fireImmediately: true);
+  }
   // OPTIMIZATION: Returns a Stream. Riverpod listens to this.
   // When you add/edit a habit, the UI rebuilds automatically.
   Stream<List<Habit>> watchAllHabits() async* {
@@ -45,4 +51,5 @@ class HabitRepository {
       }
     });
   }
+  
 }

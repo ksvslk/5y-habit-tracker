@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:palette_generator/palette_generator.dart';
-import '../../data/habit_schema.dart'; // Import your Isar schema
+import '../../data/habit_schema.dart';
 
-class AddHabitDialog extends ConsumerStatefulWidget {
-  const AddHabitDialog({super.key});
+class AddHabitScreen extends ConsumerStatefulWidget {
+  const AddHabitScreen({super.key});
 
   @override
-  ConsumerState<AddHabitDialog> createState() => _AddHabitDialogState();
+  ConsumerState<AddHabitScreen> createState() => _AddHabitScreenState();
 }
 
-class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
+class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   String name = '';
   Color selectedColor = Colors.green;
   String selectedTheme = 'nature';
@@ -40,7 +40,6 @@ class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
         isCustom = true;
       });
       
-      // Optional: Extract color from image
       try {
         final PaletteGenerator generator = await PaletteGenerator.fromImageProvider(
           ResizeImage(FileImage(File(image.path)), width: 300),
@@ -84,126 +83,134 @@ class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
   void _createHabit() {
     if (name.isEmpty) return;
 
-    // Create the Isar object
     final newHabit = Habit()
       ..name = name
-      ..colorValue = selectedColor.value // Store Color as int
+      ..colorValue = selectedColor.value
       ..theme = selectedTheme
       ..customImagePath = customPath
-      ..completedDays = []; // Initialize empty list
+      ..completedDays = [];
 
-    // Use Riverpod to access the Repository
     ref.read(habitRepositoryProvider).addHabit(newHabit);
-
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text("New Habit", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        // Close Button (Left)
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        // Create Button (Right)
+        actions: [
+          TextButton(
+            onPressed: name.isNotEmpty ? _createHabit : null, 
+            child: Text(
+              "Create", 
+              style: TextStyle(
+                fontWeight: FontWeight.bold, 
+                fontSize: 16,
+                color: name.isNotEmpty ? selectedColor : Colors.grey[400]
+              )
+            )
+          )
+        ],
+      ),
+      body: SafeArea(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("New Habit", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              
               // Name Input
               TextField(
+                autofocus: true,
                 decoration: const InputDecoration(
                   labelText: "Name", 
                   filled: true, 
-                  fillColor: Color(0xFFF1F5F9), 
+                  fillColor: Color(0xFFF8FAFC), 
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none)
                 ), 
                 onChanged: (val) => setState(() => name = val)
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
               
               // Color Picker
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween, 
                 children: [
-                  const Text("Color", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)), 
+                  const Text("Color", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)), 
                   if (isScanning) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                 ]
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
                 children: colors.map((c) => GestureDetector(
                   onTap: () => setState(() => selectedColor = c), 
                   child: Container(
-                    margin: const EdgeInsets.only(right: 8), 
-                    width: 32, height: 32, 
+                    margin: const EdgeInsets.only(right: 12), 
+                    width: 40, height: 40, 
                     decoration: BoxDecoration(
                       color: c, 
                       shape: BoxShape.circle, 
-                      border: selectedColor == c ? Border.all(color: Colors.black, width: 2) : null
+                      border: selectedColor == c ? Border.all(color: Colors.black, width: 3) : null,
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))]
                     )
                   )
                 )).toList()
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
               
               // Theme Selector
-              const Text("Theme", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-              const SizedBox(height: 8),
+              const Text("Theme", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+              const SizedBox(height: 12),
               Wrap(
-                spacing: 8, 
-                runSpacing: 8, 
+                spacing: 12, 
+                runSpacing: 12, 
                 children: themes.entries.map((e) => GestureDetector(
                   onTap: () => setState(() { selectedTheme = e.key; isCustom = false; customPath = null; }), 
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), 
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), 
                     decoration: BoxDecoration(
                       color: (!isCustom && selectedTheme == e.key) ? selectedColor.withOpacity(0.1) : Colors.grey[100], 
-                      border: (!isCustom && selectedTheme == e.key) ? Border.all(color: selectedColor) : null, 
-                      borderRadius: BorderRadius.circular(12)
+                      border: (!isCustom && selectedTheme == e.key) ? Border.all(color: selectedColor, width: 2) : Border.all(color: Colors.transparent, width: 2), 
+                      borderRadius: BorderRadius.circular(16)
                     ), 
-                    child: Text(e.value, style: TextStyle(color: (!isCustom && selectedTheme == e.key) ? selectedColor : Colors.black87))
+                    child: Text(e.value, style: TextStyle(fontWeight: FontWeight.w600, color: (!isCustom && selectedTheme == e.key) ? selectedColor : Colors.black54))
                   )
                 )).toList()
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               
               // Image Picker Button
               GestureDetector(
                 onTap: _showImageSourceSheet, 
                 child: Container(
                   width: double.infinity, 
-                  padding: const EdgeInsets.all(16), 
+                  padding: const EdgeInsets.symmetric(vertical: 24), 
                   decoration: BoxDecoration(
-                    color: isCustom ? Colors.black.withOpacity(0.05) : Colors.transparent, 
-                    border: Border.all(color: isCustom ? Colors.black : Colors.grey[300]!, style: isCustom ? BorderStyle.solid : BorderStyle.none), 
-                    borderRadius: BorderRadius.circular(16)
+                    color: isCustom ? Colors.black.withOpacity(0.03) : Colors.white, 
+                    border: Border.all(color: isCustom ? Colors.black : Colors.grey[300]!, style: isCustom ? BorderStyle.solid : BorderStyle.none, width: 2), 
+                    borderRadius: BorderRadius.circular(20)
                   ), 
                   child: Column(children: [
-                    Icon(Icons.add_a_photo, color: isCustom ? Colors.black : Colors.grey), 
+                    Icon(Icons.add_photo_alternate_outlined, size: 32, color: isCustom ? Colors.black : Colors.grey), 
                     const SizedBox(height: 8), 
-                    Text(customPath != null ? "Image Selected" : "Scan or Pick Image", style: TextStyle(fontWeight: FontWeight.bold, color: isCustom ? Colors.black : Colors.grey))
+                    Text(
+                      customPath != null ? "Image Selected" : "Tap to pick a custom photo", 
+                      style: TextStyle(fontWeight: FontWeight.bold, color: isCustom ? Colors.black : Colors.grey)
+                    )
                   ])
                 )
               ),
-              const SizedBox(height: 24),
-              
-              // Create Button
-              SizedBox(
-                width: double.infinity, 
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black, 
-                    foregroundColor: Colors.white, 
-                    padding: const EdgeInsets.symmetric(vertical: 16), 
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
-                  ), 
-                  onPressed: name.isNotEmpty ? _createHabit : null, 
-                  child: const Text("Create", style: TextStyle(fontWeight: FontWeight.bold))
-                )
-              )
             ],
           ),
         ),

@@ -16,3 +16,4 @@ Stream<List<Habit>> habits(HabitsRef ref) {
   final repository = ref.watch(habitRepositoryProvider);
   return repository.watchAllHabits();
 }
+

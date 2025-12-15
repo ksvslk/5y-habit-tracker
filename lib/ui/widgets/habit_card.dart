@@ -16,9 +16,22 @@ class HabitCard extends ConsumerWidget {
     final year = DateTime.now().year;
     final color = Color(habit.colorValue);
     
+    // 1. Base Tone (Card Background)
     final baseTone = Color.alphaBlend(color.withOpacity(0.15), Colors.white);
     
-    // Count days for current year
+    // 2. Derive Tones using HSL
+    final HSLColor hslBase = HSLColor.fromColor(baseTone);
+
+    // Grid Fill
+    final Color gridFill = hslBase.withLightness(
+      (hslBase.lightness - 0.05).clamp(0.0, 1.0)
+    ).toColor();
+
+    // Grid Border
+    final Color gridBorder = hslBase.withLightness(
+      (hslBase.lightness - 0.20).clamp(0.0, 1.0)
+    ).toColor();
+
     final count = habit.completedDays.where((d) => d.startsWith("$year-")).length;
     final percent = ((count / 365) * 100).round();
 
@@ -38,23 +51,19 @@ class HabitCard extends ConsumerWidget {
         }
       },
       child: Container(
-        // FIX 1: Removed fixed "height: 380". 
-        // Now the card expands to fit the mosaic perfectly on any screen size.
         decoration: BoxDecoration(
           color: baseTone,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: color.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 8))],
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Wrap content tightly
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Row(
               children: [
                 CircleAvatar(backgroundColor: color, radius: 20, child: const Icon(Icons.emoji_events, color: Colors.white, size: 20)),
                 const SizedBox(width: 12),
-                // Expanded ensures long names don't break layout
                 Expanded(
                   child: Text(
                     habit.name, 
@@ -65,33 +74,41 @@ class HabitCard extends ConsumerWidget {
               ],
             ),
             
-            // FIX 2: Fixed spacing instead of Spacer().
-            // This guarantees the header is never "too close" to the grid.
             const SizedBox(height: 20),
             
-            // The Mosaic
             AspectRatio(
               aspectRatio: 20 / 19,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    if (habit.customImagePath != null)
-                      Image.file(
-                        File(habit.customImagePath!), 
-                        fit: BoxFit.cover,
-                        cacheWidth: 600, 
-                      )
-                    else
-                      Image.asset('assets/habits/${habit.theme}/1.jpg', fit: BoxFit.cover),
+                    // --- ANIMATION START ---
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0.0, end: 1.0), // Fade 0 to 1
+                      duration: const Duration(milliseconds: 1000), // Duration 0.8s
+                      curve: Curves.linear,
+                      
+                      // PASS IMAGE AS CHILD (Optimized so image loads once, not every frame)
+                      child: habit.customImagePath != null
+                          ? Image.file(File(habit.customImagePath!), fit: BoxFit.cover, cacheWidth: 600)
+                          : Image.asset('assets/habits/${habit.theme}/1.jpg', fit: BoxFit.cover),
+                      
+                      // BUILDER APPLIES OPACITY
+                      builder: (context, opacity, child) {
+                        return Opacity(
+                          opacity: opacity,
+                          child: child,
+                        );
+                      },
+                    ),
+                    // --- ANIMATION END ---
                       
                     CustomPaint(
                       painter: MosaicPainter(
                         completedDays: habit.completedDays,
                         year: year,
-                        tileColor: baseTone,
-                        itemRadius: 2.0,
+                        fillColor: gridFill,
+                        borderColor: gridBorder,
                       ),
                     ),
                   ],
@@ -99,10 +116,8 @@ class HabitCard extends ConsumerWidget {
               ),
             ),
             
-            // FIX 3: Fixed spacing for footer
             const SizedBox(height: 20),
             
-            // Footer
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -110,8 +125,6 @@ class HabitCard extends ConsumerWidget {
                 Text("$percent%", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ],
             ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: percent / 100, color: color, backgroundColor: Colors.white60, minHeight: 8, borderRadius: BorderRadius.circular(4)),
           ],
         ),
       ),

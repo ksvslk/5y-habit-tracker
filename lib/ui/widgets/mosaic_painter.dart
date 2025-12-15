@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 class MosaicPainter extends CustomPainter {
-  final List<String> completedDays; // Changed to List for Isar compatibility
+  final List<String> completedDays;
   final int year;
-  final Color tileColor;
-  final double itemRadius;
+  final Color fillColor;
+  final Color borderColor;
 
-  // Pre-calculate constants to save CPU cycles in the loop
   static const int cols = 20;
   static const int rows = 19; 
   static const int totalDays = 365;
@@ -14,25 +13,34 @@ class MosaicPainter extends CustomPainter {
   MosaicPainter({
     required this.completedDays,
     required this.year,
-    required this.tileColor,
-    required this.itemRadius,
+    required this.fillColor,
+    required this.borderColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Optimization: Create Paint objects once outside the loop
-    final Paint lockPaint = Paint()..color = tileColor..style = PaintingStyle.fill;
-    
-    // Using a simpler loop structure for raw speed
+    final Paint fillPaint = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill;
+
+    final Paint innerBorderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0; // Inner grid lines stay thin
+
+    // NEW: Paint for the Outer Edge
+    final Paint outerBorderPaint = Paint()
+      ..color = borderColor // Or make this darker/thicker if you want
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.0; // <--- THICKER OUTER EDGE
+
     final double cellWidth = size.width / cols;
     final double cellHeight = size.height / rows;
-    const double gapDeflate = 0.5;
     
-    // Optimization: Cache set lookup for O(1) access
     final Set<String> completedSet = completedDays.toSet();
 
+    // 1. Draw the cells and inner grid
     for (int i = 0; i < totalDays; i++) {
-      // Logic: Only draw if NOT completed (to hide the image)
       final String key = "$year-$i";
       if (completedSet.contains(key)) continue; 
 
@@ -40,7 +48,6 @@ class MosaicPainter extends CustomPainter {
       int col = i % cols;
       
       double width = cellWidth;
-      // Handle the hanging items in the last row
       if (i == totalDays - 1) {
         int itemsInLastRow = totalDays % cols;
         if (itemsInLastRow == 0) itemsInLastRow = cols;
@@ -49,19 +56,21 @@ class MosaicPainter extends CustomPainter {
       }
 
       Rect cellRect = Rect.fromLTWH(col * cellWidth, row * cellHeight, width, cellHeight);
-      
-      // Draw the "Cover" tile
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(cellRect.deflate(gapDeflate), Radius.circular(itemRadius)), 
-        lockPaint
-      );
+
+      canvas.drawRect(cellRect, fillPaint);
+      canvas.drawRect(cellRect, innerBorderPaint);
     }
+
+    // 2. Draw the Outer Border around the whole thing
+    // We deflate by 1.5 (half of 3.0) to ensure the thick line isn't clipped
+    final Rect outerRect = Rect.fromLTWH(0, 0, size.width, size.height).deflate(0);
+    canvas.drawRect(outerRect, outerBorderPaint);
   }
 
   @override
   bool shouldRepaint(covariant MosaicPainter oldDelegate) {
     return oldDelegate.completedDays.length != completedDays.length || 
            oldDelegate.year != year || 
-           oldDelegate.tileColor != tileColor;
+           oldDelegate.fillColor != fillColor;
   }
 }
