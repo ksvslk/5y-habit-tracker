@@ -53,6 +53,16 @@ final Map<String, dynamic> themeData = {
       const Color(0xFFEEE9E6), // 5.jpg
     ],
   },
+  'smoker': {
+    'name': 'Smoker',
+    'colors': [
+      const Color(0xFFEDE6E6), // 1.jpg
+      const Color(0xFFEDE6E6), // 2.jpg
+      const Color(0xFFEFECE6), // 3.jpg
+      const Color(0xFFEDE6E6), // 4.jpg
+      const Color(0xFFEDE6E6), // 5.jpg
+    ],
+  },
   'warrior': {
     'name': 'Warrior',
     'colors': [

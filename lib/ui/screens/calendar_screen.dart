@@ -268,17 +268,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   // Standardization Constant
   static const double _sidePadding = 20.0;
 
-  @override
+@override
   void initState() {
     super.initState();
     
-    // FIX: Use UTC to initialize focused month to avoid DST offsets
     final now = DateTime.now();
-    if (widget.initialYear != null) {
-      _focusedMonth = DateTime.utc(widget.initialYear!, 1, 1);
-    } else {
-      _focusedMonth = DateTime.utc(now.year, now.month, 1);
-    }
+    
+    // Determine which year to show (default to current year if null)
+    int targetYear = widget.initialYear ?? now.year;
+    
+    // LOGIC FIX: 
+    // If the target year is the CURRENT year, show the CURRENT month.
+    // Otherwise (for past/future years), default to January.
+    int targetMonth = (targetYear == now.year) ? now.month : 1;
+
+    // Initialize _focusedMonth using UTC to align with your controller logic
+    _focusedMonth = DateTime.utc(targetYear, targetMonth, 1);
 
     _controller = CalendarController();
     _controller.load(widget.habit.completedDays);
