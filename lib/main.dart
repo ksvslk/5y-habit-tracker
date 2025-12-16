@@ -26,16 +26,32 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'EverGreen',
       debugShowCheckedModeBanner: false,
+      
+      // 1. LIGHT THEME
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.white, brightness: Brightness.light),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        // Fast transitions for snappier feel
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC), // Light Grey
         pageTransitionsTheme: const PageTransitionsTheme(builders: {
           TargetPlatform.android: ZoomPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         }),
       ),
+
+      // 2. DARK THEME (New)
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.black, brightness: Brightness.dark),
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF121212), // Dark Grey/Black
+        pageTransitionsTheme: const PageTransitionsTheme(builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        }),
+      ),
+
+      // 3. AUTO-DETECT
+      themeMode: ThemeMode.system, 
+      
       home: const HomeScreen(),
     );
   }

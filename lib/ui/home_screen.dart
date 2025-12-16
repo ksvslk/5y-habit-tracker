@@ -13,24 +13,28 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final habitsAsync = ref.watch(habitsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      // No hardcoded background color
       body: CustomScrollView(
-        // Optimization: Render unseen items to prevent jank on rapid scroll
         cacheExtent: 2000,
         slivers: [
-          const SliverAppBar(
+          SliverAppBar(
             floating: true,
             title: Text(
               'Habits',
               style: TextStyle(
-                color: Colors.black,
+                // Adapt text color
+                color: isDark ? Colors.white : Colors.black,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            backgroundColor: Color(0xFFF8FAFC),
+            // Adapt Appbar background
+            backgroundColor: surfaceColor,
             elevation: 0,
+            iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
           ),
 
           habitsAsync.when(
@@ -45,8 +49,6 @@ class HomeScreen extends ConsumerWidget {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final habit = habits[index];
-                    // PERFORMANCE: RepaintBoundary isolates this card.
-                    // If another card updates, this one does not repaint.
                     return RepaintBoundary(
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 24),
@@ -60,28 +62,25 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
- floatingActionButton: FloatingActionButton.large(
-  onPressed: () {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: true, // Keep opaque for GPU performance
-        // Only render the FadeTransition
-        pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
-          opacity: animation, 
-          child: const AddHabitScreen(),
-        ),
-        // No transitionsBuilder needed if we wrap the child directly in pageBuilder
-        // Or if you prefer transitionsBuilder for cleaner code:
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
+      floatingActionButton: FloatingActionButton.large(
+        onPressed: () {
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              opaque: true, 
+              pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
+                opacity: animation, 
+                child: const AddHabitScreen(),
+              ),
+            ),
+          );
         },
+        // DARK MODE FAB LOGIC:
+        // Light Mode: Black BG / White Icon
+        // Dark Mode: White BG / Black Icon (High Visibility)
+        backgroundColor: isDark ? Colors.white : Colors.black,
+        foregroundColor: isDark ? Colors.black : Colors.white,
+        child: const Icon(Icons.add),
       ),
-    );
-  },
-  backgroundColor: Colors.black,
-  foregroundColor: Colors.white,
-  child: const Icon(Icons.add),
-),
     );
   }
 }

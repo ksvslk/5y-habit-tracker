@@ -1,39 +1,96 @@
 import 'dart:io';
+import 'dart:math'; 
 import 'package:fiveyear/data/habit_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/habit_schema.dart';
+import '../../data/theme_colors.dart'; 
 import '../screens/calendar_screen.dart'; 
 import 'mosaic_painter.dart';
 
-class HabitCard extends ConsumerWidget {
+class HabitCard extends ConsumerStatefulWidget {
   final Habit habit;
+  final int sourceWidth; 
 
-  const HabitCard({super.key, required this.habit});
+  const HabitCard({
+    super.key, 
+    required this.habit,
+    this.sourceWidth = 1024,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final year = DateTime.now().year;
-    final color = Color(habit.colorValue);
-    
-    // 1. Base Tone (Card Background)
-    final baseTone = Color.alphaBlend(color.withOpacity(0.15), Colors.white);
-    
-    // 2. Derive Tones using HSL
-    final HSLColor hslBase = HSLColor.fromColor(baseTone);
+  ConsumerState<HabitCard> createState() => _HabitCardState();
+}
 
-    // Grid Fill
-    final Color gridFill = hslBase.withLightness(
-      (hslBase.lightness - 0.05).clamp(0.0, 1.0)
-    ).toColor();
+class _HabitCardState extends ConsumerState<HabitCard> {
+  late PageController _yearController;
+  final int _historyLength = 100;
+  late int _displayYear;
+  final int _anchorYear = DateTime.now().year;
 
-    // Grid Border
-    final Color gridBorder = hslBase.withLightness(
-      (hslBase.lightness - 0.20).clamp(0.0, 1.0)
-    ).toColor();
+  @override
+  void initState() {
+    super.initState();
+    _displayYear = _anchorYear;
+    _yearController = PageController(initialPage: _historyLength);
+  }
 
-    final count = habit.completedDays.where((d) => d.startsWith("$year-")).length;
-    final percent = ((count / 365) * 100).round();
+  @override
+  void dispose() {
+    _yearController.dispose();
+    super.dispose();
+  }
+
+  Color _getColorForPageIndex(int index) {
+    final yearsInPast = _historyLength - index;
+    final year = _anchorYear - yearsInPast;
+    int yearDiff = year - _anchorYear;
+    int assetIndex = ((yearDiff % 5) + 5) % 5 + 1;
+
+    try {
+      final themeName = widget.habit.theme;
+      if (themeData.containsKey(themeName)) {
+        final colors = themeData[themeName]['colors'] as List<Color>;
+        return colors[assetIndex - 1]; 
+      }
+    } catch (e) {
+      // Fallthrough
+    }
+    return Color(widget.habit.colorValue);
+  }
+
+  Color _getSmoothColor() {
+    if (!_yearController.hasClients) {
+      return _getColorForPageIndex(_historyLength);
+    }
+    final double page = _yearController.page ?? _historyLength.toDouble();
+    final int prevIndex = page.floor();
+    final int nextIndex = page.ceil();
+    final double percent = page - prevIndex;
+    final Color colorA = _getColorForPageIndex(prevIndex);
+    final Color colorB = _getColorForPageIndex(nextIndex);
+    return Color.lerp(colorA, colorB, percent) ?? colorA;
+  }
+
+  /// Helper for Light Mode borders (Vapor/Paper style)
+  Color _getCrispBorder(Color fill) {
+    final hsl = HSLColor.fromColor(fill);
+    if (hsl.lightness > 0.5) {
+      return hsl.withLightness(max(0.0, hsl.lightness - 0.2)).toColor();
+    } else {
+      return hsl.withLightness(max(0.0, hsl.lightness - 0.15)).toColor();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+    int targetCacheWidth = (screenWidth * pixelRatio).round();
+    if (targetCacheWidth > widget.sourceWidth) targetCacheWidth = widget.sourceWidth;
+
+    const double borderRadius = 12.0; 
+    const double borderStroke = 0.5; 
 
     return GestureDetector(
       onTap: () async {
@@ -41,92 +98,211 @@ class HabitCard extends ConsumerWidget {
           context,
           PageRouteBuilder(
             opaque: true, 
-            pageBuilder: (_, __, ___) => CalendarScreen(habit: habit),
+            pageBuilder: (_, __, ___) => CalendarScreen(
+              habit: widget.habit,
+              initialYear: _displayYear, 
+            ),
             transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
           ),
         );
-        
         if (result != null) {
-          ref.read(habitRepositoryProvider).updateHabitDays(habit.id, result);
+          ref.read(habitRepositoryProvider).updateHabitDays(widget.habit.id, result);
         }
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: baseTone,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: color.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 8))],
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(backgroundColor: color, radius: 20, child: const Icon(Icons.emoji_events, color: Colors.white, size: 20)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    habit.name, 
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+      child: AnimatedBuilder(
+        animation: _yearController,
+        builder: (context, child) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          var currentColor = _getSmoothColor();
+          
+          Color baseTone;
+          Color textColor;
+          Color uiColor;     
+          Color gridFill;
+          Color gridBorder;
+
+          // CALCULATE ACCENTS
+          var hsl = HSLColor.fromColor(currentColor);
+
+          if (isDark) {
+            // --- DARK MODE CONFIG ---
+            baseTone = const Color(0xFF1E1E1E); 
+            textColor = Colors.white;
+
+            // Ensure bright accent for text/borders
+            Color brightAccent = hsl.withLightness(max(hsl.lightness, 0.7)).toColor();
+            uiColor = brightAccent;
+
+            // Stealth Grid
+            gridFill = currentColor;
+            gridBorder = baseTone;
+
+          } else {
+            // --- LIGHT MODE CONFIG ---
+            baseTone = Color.alphaBlend(currentColor.withOpacity(0.15), Colors.white);
+            textColor = Colors.black;
+            uiColor = hsl.withLightness(min(hsl.lightness, 0.3)).toColor();
+
+            gridFill = currentColor;
+            gridBorder = _getCrispBorder(currentColor); 
+          }
+
+          // --- RESOLVE ICON DATA ---
+          IconData habitIcon = widget.habit.iconCodePoint != null 
+              ? IconData(widget.habit.iconCodePoint!, fontFamily: 'MaterialIcons') 
+              : Icons.emoji_events;
+
+          // --- CONTRAST CALCULATIONS FOR ICON ---
+          Color iconBg;
+          Color iconFg;
+
+          if (isDark) {
+            // Dark Mode: Glassy background, Neon Icon
+            iconBg = currentColor.withOpacity(0.2); 
+            iconFg = uiColor; 
+          } else {
+            // Light Mode: Solid background, Black/White Icon based on luminance
+            iconBg = currentColor;
+            // Calculate luminance: 0.0 (dark) to 1.0 (light). 
+            // If background is light (>0.5), use Black icon. Otherwise White.
+            iconFg = iconBg.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              color: baseTone, 
+              borderRadius: BorderRadius.circular(20),
+              border: isDark 
+                  ? Border.all(color: uiColor.withOpacity(0.3), width: 1)
+                  : null,
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.black.withOpacity(0.5) : currentColor.withOpacity(0.08), 
+                  blurRadius: 12, 
+                  offset: const Offset(0, 6)
+                )
               ],
             ),
-            
-            const SizedBox(height: 20),
-            
-            AspectRatio(
-              aspectRatio: 20 / 19,
-              child: ClipRRect(
-                child: Stack(
-                  fit: StackFit.expand,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   children: [
-                    // --- ANIMATION START ---
-                    TweenAnimationBuilder<double>(
-                      tween: Tween<double>(begin: 0.0, end: 1.0), // Fade 0 to 1
-                      duration: const Duration(milliseconds: 1000), // Duration 0.8s
-                      curve: Curves.linear,
-                      
-                      // PASS IMAGE AS CHILD (Optimized so image loads once, not every frame)
-                      child: habit.customImagePath != null
-                          ? Image.file(File(habit.customImagePath!), fit: BoxFit.cover, cacheWidth: 600)
-                          : Image.asset('assets/habits/${habit.theme}/1.jpg', fit: BoxFit.cover),
-                      
-                      // BUILDER APPLIES OPACITY
-                      builder: (context, opacity, child) {
-                        return Opacity(
-                          opacity: opacity,
-                          child: child,
-                        );
-                      },
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: iconBg, 
+                        shape: BoxShape.circle,
+                        // In dark mode, add a thin border to define the circle against the dark card
+                        border: isDark ? Border.all(color: uiColor.withOpacity(0.5), width: 1) : null
+                      ),
+                      child: Icon(habitIcon, color: iconFg, size: 20)
                     ),
-                    // --- ANIMATION END ---
-                      
-                    CustomPaint(
-                      painter: MosaicPainter(
-                        completedDays: habit.completedDays,
-                        year: year,
-                        fillColor: gridFill,
-                        borderColor: gridBorder,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.habit.name, 
+                        style: TextStyle(
+                          fontSize: 18, 
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                          color: textColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      _displayYear.toString(),
+                      style: TextStyle(
+                        color: uiColor, 
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("$count days", style: TextStyle(color: Colors.black.withOpacity(0.5), fontWeight: FontWeight.bold)),
-                Text("$percent%", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                
+                const SizedBox(height: 16),
+                
+                AspectRatio(
+                  aspectRatio: 20 / 19,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(borderRadius),
+                        child: PageView.builder(
+                          controller: _yearController,
+                          itemCount: _historyLength + 1, 
+                          onPageChanged: (index) {
+                            final yearsInPast = _historyLength - index;
+                            final newYear = _anchorYear - yearsInPast;
+                            if (_displayYear != newYear) {
+                              setState(() => _displayYear = newYear);
+                            }
+                          },
+                          itemBuilder: (context, index) {
+                            final yearsInPast = _historyLength - index;
+                            final year = _anchorYear - yearsInPast;
+                            int yearDiff = year - _anchorYear;
+                            int assetIndex = ((yearDiff % 5) + 5) % 5 + 1;
+
+                            return Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                widget.habit.customImagePath != null
+                                    ? Image.file(
+                                        File(widget.habit.customImagePath!), 
+                                        fit: BoxFit.cover, 
+                                        cacheWidth: targetCacheWidth, 
+                                      )
+                                    : Image.asset(
+                                        'assets/habits/${widget.habit.theme}/$assetIndex.jpg', 
+                                        fit: BoxFit.cover,
+                                        cacheWidth: targetCacheWidth,
+                                        frameBuilder: (context, child, frame, wasSync) {
+                                          if (wasSync) return child;
+                                          return AnimatedOpacity(
+                                            opacity: frame == null ? 0 : 1,
+                                            duration: const Duration(milliseconds: 300),
+                                            curve: Curves.easeOut,
+                                            child: child,
+                                          );
+                                        },
+                                      ),
+                                CustomPaint(
+                                  painter: MosaicPainter(
+                                    completedDays: widget.habit.completedDays,
+                                    year: year,
+                                    fillColor: gridFill, 
+                                    borderColor: gridBorder,
+                                  ),
+                                  size: Size.infinite,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      IgnorePointer(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(borderRadius),
+                            border: Border.all(
+                              color: uiColor, 
+                              width: borderStroke,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
