@@ -21,7 +21,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   IconData selectedIcon = Icons.emoji_events;
 
   // --- ICON LIBRARY ---
-final List<IconData> _availableIcons = [
+  final List<IconData> _availableIcons = [
     // 1. GENERAL / PRODUCTIVITY
     Icons.emoji_events, Icons.star, Icons.flag, Icons.check_circle,
     Icons.timeline, Icons.lightbulb, Icons.bolt, Icons.local_fire_department,
@@ -102,7 +102,12 @@ final List<IconData> _availableIcons = [
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final HSLColor hsl = HSLColor.fromColor(color);
     if (isDark) {
-      return hsl.withLightness(max(hsl.lightness, 0.75)).toColor();
+      // FIX 1: Push lightness higher (0.65) and ensure saturation (0.6)
+      // This ensures the color is "Bright" enough to glow against black.
+      return hsl
+          .withLightness(max(hsl.lightness, 0.65)) 
+          .withSaturation(max(hsl.saturation, 0.6))
+          .toColor();
     } else {
       return hsl.withLightness(min(hsl.lightness, 0.4)).toColor();
     }
@@ -180,8 +185,9 @@ final List<IconData> _availableIcons = [
                       },
                       child: Container(
                         decoration: BoxDecoration(
+                          // FIX 2: Use iconColor (bright) for background tint too
                           color: isSelected 
-                            ? iconColor.withOpacity(0.2) 
+                            ? iconColor.withOpacity(0.3) 
                             : (isDark ? Colors.grey[800] : Colors.grey[100]),
                           shape: BoxShape.circle,
                           border: isSelected 
@@ -255,7 +261,11 @@ final List<IconData> _availableIcons = [
                   border: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)), 
                     borderSide: BorderSide.none
-                  )
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    borderSide: BorderSide(color: activeColor, width: 2),
+                  ),
                 ), 
                 onChanged: (val) {
                    setState(() => name = val);
@@ -265,7 +275,7 @@ final List<IconData> _availableIcons = [
               
               const SizedBox(height: 32),
 
-              // --- 2. ICON SELECTOR (NO TITLE) ---
+              // --- 2. ICON SELECTOR ---
               GestureDetector(
                 onTap: _showIconPicker,
                 child: Container(
@@ -279,7 +289,8 @@ final List<IconData> _availableIcons = [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: activeColor.withOpacity(0.2),
+                          // FIX 3: Use activeColor (bright) for the small preview bubble too
+                          color: activeColor.withOpacity(0.3),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(selectedIcon, color: activeColor),
@@ -298,25 +309,24 @@ final List<IconData> _availableIcons = [
 
               const SizedBox(height: 32),
               
-              // --- 3. THEME SELECTION (FULL WIDTH CLOUD) ---
+              // --- 3. THEME SELECTION ---
               Text(
                 "Select Theme", 
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)
               ),
               const SizedBox(height: 12),
 
-              // Wrap automatically takes full width of the parent (Column), 
-              // which adheres to the padding of SingleChildScrollView (24).
               Wrap(
                 spacing: 12, 
                 runSpacing: 12, 
-                alignment: WrapAlignment.start, // Left aligned to fill width naturally
+                alignment: WrapAlignment.start, 
                 children: themeData.entries.map((e) {
                   final key = e.key;
                   final data = e.value;
                   final isSelected = (selectedTheme == key);
                   final rawColor = _getColorForTheme(key);
                   final contrastColor = _getReadableColor(rawColor);
+                  
                   final inactiveBg = isDark ? Colors.grey[900]! : const Color(0xFFF4F4F5);
                   final inactiveText = isDark ? Colors.grey[400] : Colors.black87;
 
@@ -331,10 +341,16 @@ final List<IconData> _availableIcons = [
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), 
                       decoration: BoxDecoration(
-                        color: isSelected ? rawColor.withOpacity(isDark ? 0.25 : 0.15) : inactiveBg, 
+                        // FIX 4 (CRITICAL): Use 'contrastColor' for background, not 'rawColor'.
+                        // Raw color is too dark. Contrast color is bright, creating a neon glow.
+                        // Opacity is set to 0.25 which is standard for "Active State" material design.
+                        color: isSelected 
+                            ? contrastColor.withOpacity(isDark ? 0.25 : 0.15) 
+                            : inactiveBg, 
                         border: Border.all(
                           color: isSelected ? contrastColor : Colors.transparent, 
-                          width: 2
+                          // FIX 5: Thicker border (3) to make selection undeniable
+                          width: isSelected ? 3 : 2
                         ), 
                         borderRadius: BorderRadius.circular(12)
                       ), 
@@ -351,7 +367,6 @@ final List<IconData> _availableIcons = [
                 }).toList()
               ),
               
-              // Extra padding at bottom so scrolling feels natural
               const SizedBox(height: 40),
             ],
           ),

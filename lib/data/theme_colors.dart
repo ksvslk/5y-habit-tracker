@@ -13,14 +13,34 @@ final Map<String, dynamic> themeData = {
       const Color(0xFFEDE6E6), // 5.jpg
     ],
   },
-  'early_riser': {
-    'name': 'Early_riser',
+  'creator': {
+    'name': 'Creator',
+    'colors': [
+      const Color(0xFFEDE6E6), // 1.jpg
+      const Color(0xFFEDE6E6), // 2.jpg
+      const Color(0xFFEEEAE6), // 3.jpg
+      const Color(0xFFEDE6E6), // 4.jpg
+      const Color(0xFFF0F0E6), // 5.jpg
+    ],
+  },
+  'morning': {
+    'name': 'Morning',
     'colors': [
       const Color(0xFFEFECE6), // 1.jpg
       const Color(0xFFF0F0E6), // 2.jpg
       const Color(0xFFF0F0E6), // 3.jpg
       const Color(0xFFEDE6E6), // 4.jpg
       const Color(0xFFE5F5F5), // 5.jpg
+    ],
+  },
+  'nurturer': {
+    'name': 'Nurturer',
+    'colors': [
+      const Color(0xFFEEEAE6), // 1.jpg
+      const Color(0xFFEDE6E6), // 2.jpg
+      const Color(0xFFF0F0E6), // 3.jpg
+      const Color(0xFFF0F0E6), // 4.jpg
+      const Color(0xFFEEE9E6), // 5.jpg
     ],
   },
   'scholar': {
