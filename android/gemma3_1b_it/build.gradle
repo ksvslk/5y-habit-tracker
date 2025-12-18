@@ -1,0 +1,10 @@
+plugins {
+    id 'com.android.asset-pack'
+}
+
+assetPack {
+    packName = "gemma3_1b_it" // Must match the folder name
+    dynamicDelivery {
+        deliveryType = "on-demand" // We download it manually
+    }
+}

@@ -96,13 +96,11 @@ class _HabitCardState extends ConsumerState<HabitCard> {
       onTap: () async {
         final List<String>? result = await Navigator.push(
           context,
-          PageRouteBuilder(
-            opaque: true, 
-            pageBuilder: (_, __, ___) => CalendarScreen(
+          MaterialPageRoute(
+            builder: (_) => CalendarScreen(
               habit: widget.habit,
               initialYear: _displayYear, 
             ),
-            transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
           ),
         );
         if (result != null) {

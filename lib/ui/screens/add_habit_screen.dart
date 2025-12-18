@@ -254,7 +254,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                 style: TextStyle(color: textColor),
                 cursorColor: activeColor,
                 decoration: InputDecoration(
-                  labelText: "Name",
+                  labelText: "Habit",
                   labelStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                   filled: true, 
                   fillColor: isDark ? Colors.grey[900] : const Color(0xFFF8FAFC), 
@@ -316,55 +316,61 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
               ),
               const SizedBox(height: 12),
 
-              Wrap(
-                spacing: 12, 
-                runSpacing: 12, 
-                alignment: WrapAlignment.start, 
-                children: themeData.entries.map((e) {
-                  final key = e.key;
-                  final data = e.value;
-                  final isSelected = (selectedTheme == key);
-                  final rawColor = _getColorForTheme(key);
-                  final contrastColor = _getReadableColor(rawColor);
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calculate how many buttons can fit per row
+                  final buttonWidth = (constraints.maxWidth - 12) / 2; // 2 columns with spacing
                   
-                  final inactiveBg = isDark ? Colors.grey[900]! : const Color(0xFFF4F4F5);
-                  final inactiveText = isDark ? Colors.grey[400] : Colors.black87;
+                  return Wrap(
+                    spacing: 12, 
+                    runSpacing: 12, 
+                    alignment: WrapAlignment.start, 
+                    children: themeData.entries.map((e) {
+                      final key = e.key;
+                      final data = e.value;
+                      final isSelected = (selectedTheme == key);
+                      final rawColor = _getColorForTheme(key);
+                      final contrastColor = _getReadableColor(rawColor);
+                      
+                      final inactiveBg = isDark ? Colors.grey[900]! : const Color(0xFFF4F4F5);
+                      final inactiveText = isDark ? Colors.grey[400] : Colors.black87;
 
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() { 
-                        selectedTheme = key; 
-                        _updateSelectedColor(); 
-                      });
-                    }, 
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), 
-                      decoration: BoxDecoration(
-                        // FIX 4 (CRITICAL): Use 'contrastColor' for background, not 'rawColor'.
-                        // Raw color is too dark. Contrast color is bright, creating a neon glow.
-                        // Opacity is set to 0.25 which is standard for "Active State" material design.
-                        color: isSelected 
-                            ? contrastColor.withOpacity(isDark ? 0.25 : 0.15) 
-                            : inactiveBg, 
-                        border: Border.all(
-                          color: isSelected ? contrastColor : Colors.transparent, 
-                          // FIX 5: Thicker border (3) to make selection undeniable
-                          width: isSelected ? 3 : 2
-                        ), 
-                        borderRadius: BorderRadius.circular(12)
-                      ), 
-                      child: Text(
-                        data['name'], 
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: isSelected ? contrastColor : inactiveText 
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() { 
+                            selectedTheme = key; 
+                            _updateSelectedColor(); 
+                          });
+                        }, 
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: buttonWidth,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), 
+                          decoration: BoxDecoration(
+                            color: isSelected 
+                                ? contrastColor.withOpacity(isDark ? 0.25 : 0.15) 
+                                : inactiveBg, 
+                            border: Border.all(
+                              color: isSelected ? contrastColor : Colors.transparent, 
+                              width: 2
+                            ), 
+                            borderRadius: BorderRadius.circular(12)
+                          ), 
+                          child: Center(
+                            child: Text(
+                              data['name'], 
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: isSelected ? contrastColor : inactiveText 
+                              )
+                            )
+                          )
                         )
-                      )
-                    )
+                      );
+                    }).toList()
                   );
-                }).toList()
+                }
               ),
               
               const SizedBox(height: 40),

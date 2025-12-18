@@ -1,34 +1,19 @@
+import 'package:fiveyear/data/habit_schema.dart';
 import 'package:isar/isar.dart';
-import 'package:path_provider/path_provider.dart';
-import 'habit_schema.dart';
 
 class HabitRepository {
-  late Future<Isar> db;
+  // Pass the database future in via constructor
+  final Future<Isar> db;
 
-  HabitRepository() {
-    db = _initDb();
-  }
+  HabitRepository(this.db);
 
-  Future<Isar> _initDb() async {
-    final dir = await getApplicationDocumentsDirectory();
-    if (Isar.instanceNames.isEmpty) {
-      return await Isar.open(
-        [HabitSchema],
-        directory: dir.path,
-        inspector: true, // Allows debugging DB in real-time
-      );
-    }
-    return Isar.getInstance()!;
-  }
+  // --- No changes to your logic below, just using the injected 'db' ---
 
-// Add this method to watch a single habit by ID
   Stream<Habit?> watchHabit(int id) async* {
     final isar = await db;
-    // watchObject emits null if deleted, or the Habit if updated
     yield* isar.habits.watchObject(id, fireImmediately: true);
   }
-  // OPTIMIZATION: Returns a Stream. Riverpod listens to this.
-  // When you add/edit a habit, the UI rebuilds automatically.
+
   Stream<List<Habit>> watchAllHabits() async* {
     final isar = await db;
     yield* isar.habits.where().watch(fireImmediately: true);
@@ -51,5 +36,4 @@ class HabitRepository {
       }
     });
   }
-  
 }
