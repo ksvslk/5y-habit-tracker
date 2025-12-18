@@ -1,5 +1,6 @@
 import 'package:fiveyear/data/gemma_provider.dart';
 import 'package:fiveyear/data/chat_repository.dart';
+import 'package:fiveyear/ui/widgets/typing_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -110,7 +111,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  void _handleSubmitted(String text) async {
+void _handleSubmitted(String text) async {
     if (text.trim().isEmpty) return;
     _textController.clear();
 
@@ -119,9 +120,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     await ref.read(chatHistoryProvider.notifier).addInteraction(userMsg, aiMsg);
 
-    await for (final token
-        in ref.read(gemmaProvider.notifier).sendMessage(text)) {
-      aiMsg.append(token);
+    String buffer = ""; // Temporary holding area
+
+    await for (final token in ref.read(gemmaProvider.notifier).sendMessage(text)) {
+      buffer += token;
+
+      // 1. Clean "Literal" \n (e.g. the text characters \ and n)
+      // We do this in a loop in case a single token contained multiple
+      while (buffer.contains(r'\n')) {
+        buffer = buffer.replaceFirst(r'\n', ' ');
+      }
+
+      // 2. Clean "Actual" control characters (newlines, tabs)
+      buffer = buffer.replaceAll('\n', ' ').replaceAll('\t', ' ');
+
+      // 3. THE MAGIC TRICK:
+      // If the buffer ends with a backslash '\', do NOT show it yet.
+      // It might be the first half of a '\n' that is coming in the next token.
+      if (buffer.endsWith(r'\')) {
+        continue; // Wait for the next token to complete the pattern
+      }
+
+      // 4. Collapse multiple spaces into one
+      // (Only inside the current buffer to avoid lag)
+      if (buffer.contains('  ')) {
+        buffer = buffer.replaceAll(RegExp(r'\s\s+'), ' ');
+      }
+
+      // 5. Append to UI safely
+      if (buffer.isNotEmpty) {
+        // Prevent double-space at the boundary of existing text and new buffer
+        if (aiMsg.textNotifier.value.endsWith(' ') && buffer.startsWith(' ')) {
+          buffer = buffer.trimLeft();
+        }
+        
+        aiMsg.append(buffer);
+        buffer = ""; // Clear buffer since we just flushed it to UI
+      }
+    }
+
+    // 6. Loop done: If anything is left (like a trailing backslash), flush it now.
+    if (buffer.isNotEmpty) {
+       aiMsg.append(buffer);
     }
 
     ref.read(chatHistoryProvider.notifier).saveAiResponse(aiMsg);
@@ -239,7 +279,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     String asset, {
     bool showSpinner = false,
   }) {
-    return Center(
+    return Padding(
+      padding: EdgeInsetsGeometry.symmetric(horizontal: 32),
+      child: Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -250,6 +292,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             const SizedBox(height: 16),
           ],
           Text(
+            textAlign: TextAlign.center,
             text,
             style: const TextStyle(
               fontSize: 16,
@@ -258,6 +301,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -358,7 +402,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (messages.isEmpty) {
       return _buildCenteredMessage(
         isDark,
-        "Ready. Use trash bin to clear chats or reset AI if needed.",
+        "Ready to chat. Use trash bin to clear history or reset AI (it has short memory).",
         isDark
             ? 'assets/icons/greyscale_night.png'
             : 'assets/icons/greyscale.png',
@@ -443,15 +487,24 @@ class _Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isUser = message.isUser;
+    
+    // Define bubble background colors
+    final bubbleColor = isUser
+        ? color
+        : (isDark ? Colors.white12 : Colors.black.withOpacity(0.05));
+
+    // Define text colors
+    final textColor = isUser
+        ? (isDark ? Colors.black : Colors.white)
+        : (isDark ? Colors.white : Colors.black);
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isUser
-              ? color
-              : (isDark ? Colors.white12 : Colors.black.withOpacity(0.05)),
+          color: bubbleColor,
           borderRadius: BorderRadius.circular(20).copyWith(
             bottomRight: isUser ? const Radius.circular(4) : null,
             bottomLeft: !isUser ? const Radius.circular(4) : null,
@@ -459,15 +512,21 @@ class _Bubble extends StatelessWidget {
         ),
         child: ValueListenableBuilder(
           valueListenable: message.textNotifier,
-          builder: (_, text, __) => Text(
-            text,
-            style: TextStyle(
-              fontSize: 16,
-              color: isUser
-                  ? (isDark ? Colors.black : Colors.white)
-                  : (isDark ? Colors.white : Colors.black),
-            ),
-          ),
+          builder: (_, text, __) {
+            // LOGIC: If it is the AI (not User) and text is empty, show animation
+            if (!isUser && text.isEmpty) {
+              return TypingIndicator(isDark: isDark);
+            }
+
+            // Otherwise show the actual text
+            return Text(
+              text,
+              style: TextStyle(
+                fontSize: 16,
+                color: textColor,
+              ),
+            );
+          },
         ),
       ),
     );

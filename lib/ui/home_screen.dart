@@ -3,6 +3,7 @@ import 'package:fiveyear/data/habit_provider.dart';
 import 'package:fiveyear/main.dart';
 import 'package:fiveyear/ui/screens/add_habit_screen.dart';
 import 'package:fiveyear/ui/screens/chat_screen.dart';
+import 'package:fiveyear/ui/screens/daily_checkin_screen.dart';
 import 'package:fiveyear/ui/widgets/habit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +33,9 @@ class HomeScreen extends ConsumerWidget {
             ),
             backgroundColor: surfaceColor,
             elevation: 0,
-            iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
+            iconTheme: IconThemeData(
+              color: isDark ? Colors.white : Colors.black,
+            ),
           ),
           habitsAsync.when(
             loading: () => const SliverToBoxAdapter(
@@ -42,52 +45,57 @@ class HomeScreen extends ConsumerWidget {
                 SliverToBoxAdapter(child: Text('Error: $err')),
             data: (habits) {
               // --- CHANGE STARTS HERE ---
-             if (habits.isEmpty) {
-  bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+              if (habits.isEmpty) {
+                bool isDarkMode =
+                    Theme.of(context).brightness == Brightness.dark;
 
-  return SliverFillRemaining(
-    hasScrollBody: false,
-    child: Padding(
-      // Adding bottom padding (e.g., 100-150) pushes the content up 
-      // away from the FABs and into the visual center.
-      padding: const EdgeInsets.only(bottom: 120), 
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Opacity(
-              opacity: 0.8,
-              child: Image.asset(
-                isDarkMode 
-                  ? 'assets/icons/greyscale_night.png' 
-                  : 'assets/icons/greyscale.png',
-                width: 200,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No habits yet',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white70 : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tap the + button to start your journey.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDarkMode ? Colors.white38 : Colors.black45,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    // Adding bottom padding (e.g., 100-150) pushes the content up
+                    // away from the FABs and into the visual center.
+                    padding: const EdgeInsets.only(bottom: 120),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Opacity(
+                            opacity: 0.8,
+                            child: Image.asset(
+                              isDarkMode
+                                  ? 'assets/icons/greyscale_night.png'
+                                  : 'assets/icons/greyscale.png',
+                              width: 200,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No habits yet',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isDarkMode
+                                  ? Colors.white70
+                                  : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap the + button to start your journey.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: isDarkMode
+                                  ? Colors.white38
+                                  : Colors.black45,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
               // --- CHANGE ENDS HERE ---
 
               return SliverPadding(
@@ -109,9 +117,9 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      
+
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      
+
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Row(
@@ -122,9 +130,9 @@ class HomeScreen extends ConsumerWidget {
             FloatingActionButton.large(
               heroTag: 'chat_btn',
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ChatScreen()),
-                );
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
               },
               backgroundColor: isDark ? Colors.white : Colors.black,
               foregroundColor: isDark ? Colors.black : Colors.white,

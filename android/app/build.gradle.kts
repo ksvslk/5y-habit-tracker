@@ -13,6 +13,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -54,7 +55,7 @@ flutter {
 
 dependencies {
     // ... other dependencies like kotlin-stdlib, flutter stuff ...
-
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // Google Play Asset Delivery
     implementation("com.google.android.play:asset-delivery:2.2.2")
     

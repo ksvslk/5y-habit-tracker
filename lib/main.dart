@@ -1,3 +1,5 @@
+import 'package:fiveyear/services/notification_service.dart';
+import 'package:fiveyear/ui/screens/daily_checkin_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gemma/core/api/flutter_gemma.dart';
@@ -7,6 +9,15 @@ import 'ui/home_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterGemma.initialize();
+
+  // Initialize Notifications
+  final notificationService = NotificationService();
+  await notificationService.init();
+  await notificationService.requestPermissions(); // Ask for permission immediately or on settings page
+  
+  // Schedule the reminder (You might want to do this based on user settings)
+  await notificationService.scheduleDailyNotification();
+
   // 1. Enable Edge-to-Edge (Android 10+)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -25,9 +36,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EverGreen',
+      title: '5Y',
       debugShowCheckedModeBanner: false,
-      
+      navigatorKey: navigatorKey,
+
       // 1. LIGHT THEME
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white, brightness: Brightness.light),
@@ -53,7 +65,11 @@ class MyApp extends StatelessWidget {
       // 3. AUTO-DETECT
       themeMode: ThemeMode.system, 
       
-      home: const HomeScreen(),
+      initialRoute: '/', 
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/daily_check_in': (context) => const DailyCheckInScreen(),
+      },
     );
   }
 }

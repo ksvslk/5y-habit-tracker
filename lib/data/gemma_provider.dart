@@ -21,7 +21,7 @@ class GemmaState {
   final double downloadProgress;
   final String? error;
   final bool isThinking;
-  final bool isCheckingForModel; // Add this
+  final bool isCheckingForModel;
 
   GemmaState({
     this.isReady = false,
@@ -71,7 +71,7 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
   static const String _assetPackName = "gemma3_1b_it";
   static const String _modelFileName = "model.task";
   static const String _systemPrompt =
-      "You are a conversational emotional support and habit forming expert. Keep answers short.";
+      "You are a conversational emotional support and habit forming expert. Keep answers short (do not give exhaustive long help links).";
 
   InferenceModel? _inferenceModel;
   InferenceChat? _chatSession;
@@ -89,10 +89,9 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
         state.isCheckingForModel)
       return;
 
-    state = state.copyWith(isCheckingForModel: true); // Set flag immediately
+    state = state.copyWith(isCheckingForModel: true);
 
     try {
-      // Check if model already exists locally WITHOUT triggering download
       final packPath = await _assetService.getAssetPackPathIfExists(
         _assetPackName,
       );
@@ -104,7 +103,6 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
         if (await modelFile.exists()) {
           print("Model file found at $fullPath, loading into memory...");
 
-          // Don't clear isCheckingForModel yet - it will be cleared when loading starts
           await FlutterGemma.installModel(
             modelType: ModelType.gemmaIt,
           ).fromFile(fullPath).install();
@@ -112,11 +110,11 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
           await _loadModelIntoMemory();
         } else {
           print("Model file not found, user needs to download");
-          state = state.copyWith(isCheckingForModel: false); // Clear flag
+          state = state.copyWith(isCheckingForModel: false);
         }
       } else {
         print("Asset pack not present, user needs to download");
-        state = state.copyWith(isCheckingForModel: false); // Clear flag
+        state = state.copyWith(isCheckingForModel: false);
       }
     } catch (e) {
       print("Init error: $e");
@@ -139,25 +137,23 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
 
     state = state.copyWith(isThinking: true);
 
-    // DON'T persist here - let chat_screen handle it
-    // await _repository.saveMessage(text, true);
-
     final StringBuffer aiBuffer = StringBuffer();
 
     try {
       await _chatSession!.addQueryChunk(Message.text(text: text, isUser: true));
       final stream = _chatSession!.generateChatResponseAsync();
 
+      // Just collect tokens without heavy cleaning
       await for (final response in stream) {
         if (response is TextResponse) {
-          final cleanToken = response.token.replaceAll(r'\n', '');
-          aiBuffer.write(cleanToken);
+          aiBuffer.write(response.token);
           yield response.token;
         }
       }
-
-      // DON'T persist here either - chat_screen handles it
-      // await _repository.saveMessage(aiBuffer.toString(), false);
+      // Store cleaned version for potential future use
+      aiBuffer.clear();
+      aiBuffer.write(aiBuffer.toString());
+      
     } catch (e) {
       yield "[Error: $e]";
     } finally {
@@ -170,10 +166,8 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
 
     try {
       print("Starting download...");
-      // Start downloading state
       state = state.copyWith(isDownloading: true, downloadProgress: 0.0);
 
-      // Listen to progress updates from the event channel
       _progressSubscription = _assetService.downloadProgressStream.listen(
         (progress) {
           print("Download progress: ${(progress * 100).toInt()}%");
@@ -187,11 +181,9 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
         },
       );
 
-      // Request the asset pack - this now WAITS for download to complete
       print("Requesting asset pack: $_assetPackName");
       final packPath = await _assetService.fetchAssetPack(_assetPackName);
 
-      // Cancel the progress subscription
       await _progressSubscription?.cancel();
       _progressSubscription = null;
 
@@ -206,7 +198,6 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
 
       print("Asset pack downloaded to: $packPath");
 
-      // Install the model
       final fullPath = "$packPath/$_modelFileName";
       final modelFile = File(fullPath);
 
@@ -229,7 +220,6 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
 
       print("Model installed, loading into memory...");
 
-      // Load into memory
       await _loadModelIntoMemory();
 
       print("Model ready!");
@@ -250,7 +240,7 @@ class GemmaNotifier extends StateNotifier<GemmaState> {
       isLoading: true,
       isDownloading: false,
       downloadProgress: 1.0,
-       isCheckingForModel: false,
+      isCheckingForModel: false,
     );
 
     try {
