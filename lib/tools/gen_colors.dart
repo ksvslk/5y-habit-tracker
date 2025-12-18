@@ -3,51 +3,39 @@ import 'dart:math';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
-// --- Main execution function ---
 void main() {
-  print('\n🔵 Starting Auto-Generator (Vapor/Tinted White Mode)...\n');
+  print('\n🔵 Starting Auto-Generator (Overall Atmospheric Tone)...\n');
 
   // **********************************************
   // 🎨 VAPOR CONFIGURATION
-  // "Even more colorless" = Almost zero saturation.
-  // Result: "Warm Whites", "Cool Whites", "Mist".
   // **********************************************
+  // We keep the saturation low to ensure the result is a "tint", not a solid color.
+  const double targetSatMin = 0.04; 
+  const double targetSatMax = 0.10;
   
-  // Saturation: 0.03 - 0.10
-  // barely enough to distinguish "warm" from "cool", but looks white at a glance.
-  const double minSat = 0.03;
-  const double maxSat = 0.10;
+  // High lightness ensures it fits your "white/clean" aesthetic.
+  const double targetLightMin = 0.92;
+  const double targetLightMax = 0.98;
 
-  // Lightness: 0.93 - 0.99
-  // Pure, clean brightness.
-  const double minLight = 0.93;
-  const double maxLight = 0.99;
-
-  // 1. Locate directories
   final projectRoot = Directory.current;
   final habitsDir = Directory(p.join(projectRoot.path, 'assets', 'habits'));
   final outputDir = Directory(p.join(projectRoot.path, 'lib', 'data'));
   
   if (!habitsDir.existsSync()) {
     print('❌ Error: assets/habits/ folder not found.');
-    print('Make sure you run this from the project root.');
     exit(1);
   }
 
-  // Ensure output directory exists
   if (!outputDir.existsSync()) {
     outputDir.createSync(recursive: true);
   }
 
-  // 2. Start building the file content
   final buffer = StringBuffer();
   buffer.writeln("// AUTO-GENERATED FILE. DO NOT EDIT.");
-  buffer.writeln("// Run 'dart run lib/tools/gen_colors.dart' to update.");
   buffer.writeln("import 'dart:ui';");
   buffer.writeln("");
   buffer.writeln("final Map<String, dynamic> themeData = {");
 
-  // 3. Find and sort theme folders
   final folders = habitsDir.listSync()
       .whereType<Directory>()
       .toList()
@@ -63,7 +51,6 @@ void main() {
     buffer.writeln("    'name': '$displayName',");
     buffer.writeln("    'colors': [");
 
-    // 4. Find and sort images
     final images = folder.listSync()
         .whereType<File>()
         .where((f) => f.path.toLowerCase().endsWith('.jpg'))
@@ -75,7 +62,6 @@ void main() {
       return idA.compareTo(idB);
     });
 
-    // 5. Extract Colors
     for (var file in images) {
       try {
         final bytes = file.readAsBytesSync();
@@ -86,11 +72,12 @@ void main() {
           continue;
         }
 
-        // Resize for speed (analysis doesn't need 4k resolution)
-        final thumb = img.copyResize(image, width: 100);
+        // Resize to a very small thumbnail (50px). 
+        // This naturally blurs details and helps calculate the "average" tone 
+        // without getting distracted by tiny sharp details.
+        final thumb = img.copyResize(image, width: 50);
         
-        // Pass the pastel ranges to the NEW dominant color extractor
-        final colorInt = _getDominantColor(thumb, minSat, maxSat, minLight, maxLight);
+        final colorInt = _getAtmosphereColor(thumb, targetSatMin, targetSatMax, targetLightMin, targetLightMax);
         
         final r = (colorInt >> 16) & 0xFF;
         final g = (colorInt >> 8) & 0xFF;
@@ -111,77 +98,69 @@ void main() {
 
   buffer.writeln("};");
 
-  // 6. Write to file
   final outputFile = File(p.join(outputDir.path, 'theme_colors.dart'));
   outputFile.writeAsStringSync(buffer.toString());
 
-  print('\n✅ SUCCESS!');
-  print('Generated file: ${outputFile.path}');
+  print('\n✅ SUCCESS! File generated at: ${outputFile.path}');
 }
 
-// Function to find the DOMINANT (most frequent) hue, then force it to pastel
-int _getDominantColor(img.Image image, double minS, double maxS, double minL, double maxL) {
-  final Map<int, int> colorCounts = {};
-  
-  // 1. Build a Histogram
+// ---------------------------------------------------------------------------
+// 🌫️ ATMOSPHERIC AVERAGE EXTRACTOR
+// ---------------------------------------------------------------------------
+
+int _getAtmosphereColor(img.Image image, double minS, double maxS, double minL, double maxL) {
+  int rSum = 0;
+  int gSum = 0;
+  int bSum = 0;
+  int count = 0;
+
   for (var pixel in image) {
     final r = pixel.r.toInt();
     final g = pixel.g.toInt();
     final b = pixel.b.toInt();
-    
-    // Skip near-black and near-white to avoid background interference
-    // We want the tone of the *object*, not the white background or dark shadows
+
+    // Only skip absolute pure black/white borders if they exist.
+    // Otherwise, include EVERYTHING. The gray wall, the white table, 
+    // the blue sky—they all contribute to the "Tone".
     final brightness = (r + g + b) / 3;
-    if (brightness < 25 || brightness > 245) continue;
-    
-    // Quantize: Group similar colors.
-    // Rounding to nearest 20 reduces noise (e.g., 121 and 124 become the same color).
-    // This makes sure a large flat area counts as one "vote" for that color.
-    const binSize = 20;
-    final qR = (r ~/ binSize) * binSize;
-    final qG = (g ~/ binSize) * binSize;
-    final qB = (b ~/ binSize) * binSize;
-    
-    // Create a key for the map
-    final colorKey = (0xFF << 24) | (qR << 16) | (qG << 8) | qB;
-    
-    colorCounts[colorKey] = (colorCounts[colorKey] ?? 0) + 1;
+    if (brightness < 10 || brightness > 250) continue; 
+
+    rSum += r;
+    gSum += g;
+    bSum += b;
+    count++;
   }
+
+  // Fallback
+  if (count == 0) return 0xFFF5F5F5;
+
+  // Calculate the Average (Mean) Color
+  // This blends the accent and the background into one single "Mood" color.
+  final avgR = rSum ~/ count;
+  final avgG = gSum ~/ count;
+  final avgB = bSum ~/ count;
   
-  // 2. Fallback if image is pure B&W or empty
-  if (colorCounts.isEmpty) {
-    return _forcePastel(0xFF808080, minS, maxS, minL, maxL); 
-  }
-  
-  // 3. Find the color with the highest count
-  int dominantColor = 0xFFCCCCCC;
-  int maxCount = 0;
-  
-  colorCounts.forEach((color, count) {
-    if (count > maxCount) {
-      maxCount = count;
-      dominantColor = color;
-    }
-  });
-  
-  // 4. Apply the Pastel Enforcer to the winner
-  return _forcePastel(dominantColor, minS, maxS, minL, maxL); 
+  final averageColor = (0xFF << 24) | (avgR << 16) | (avgG << 8) | avgB;
+
+  // Apply the Pastel Enforcer to ensure it fits the UI lightness requirements
+  return _forcePastel(averageColor, minS, maxS, minL, maxL); 
 }
 
-// The Pastel Enforcer: Takes a dirty color, keeps the Hue, forces clean S/V
 int _forcePastel(int color, double minS, double maxS, double minL, double maxL) {
   var r = (color >> 16) & 0xFF;
   var g = (color >> 8) & 0xFF;
   var b = (color >> 0) & 0xFF;
   
-  // 1. Get HSV
+  // 1. Convert to HSV to extract the Hue
   final maxRGB = max(r, max(g, b)) / 255.0;
   final minRGB = min(r, min(g, b)) / 255.0;
   final delta = maxRGB - minRGB;
   
   double h = 0;
   if (delta == 0) {
-    h = 0; 
+    // If the image is perfectly Grayscale (no hue), 
+    // we can't extract a tone. Default to a warm "Paper White" hue (40°).
+    h = 40; 
   } else if (maxRGB == r / 255.0) {
     h = 60 * (((g / 255.0 - b / 255.0) / delta) % 6);
   } else if (maxRGB == g / 255.0) {
@@ -190,16 +169,18 @@ int _forcePastel(int color, double minS, double maxS, double minL, double maxL) 
     h = 60 * (((r / 255.0 - g / 255.0) / delta) + 4);
   }
   
-  // 2. Force Pastel Values
-  final randomizer = (h / 360.0); 
+  if (h < 0) h += 360;
+
+  // 2. Force the Vapor Variables
+  // We keep the extracted Hue, but we OVERWRITE Saturation and Value.
   
-  // Force low saturation (Less colorish)
-  final s = minS + (randomizer * (maxS - minS)); 
+  // Use a fixed "Vapor" saturation (very low)
+  final s = minS + 0.5 * (maxS - minS); 
   
-  // Force high lightness (Pastellish/Bright)
-  final v = maxL - ((1.0 - randomizer) * (maxL - minL)); 
+  // Use a fixed "Vapor" lightness (very high)
+  final v = maxL - 0.5 * (maxL - minL); 
   
-  // 3. Back to RGB
+  // 3. Convert back to RGB
   final c = v * s;
   final x = c * (1 - ((h / 60) % 2 - 1).abs());
   final m = v - c;

@@ -358,7 +358,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (messages.isEmpty) {
       return _buildCenteredMessage(
         isDark,
-        "Ready to chat",
+        "Ready. Use trash bin to clear chats or reset AI if needed.",
         isDark
             ? 'assets/icons/greyscale_night.png'
             : 'assets/icons/greyscale.png',

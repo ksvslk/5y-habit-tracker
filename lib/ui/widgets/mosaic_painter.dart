@@ -25,9 +25,8 @@ class MosaicPainter extends CustomPainter {
 
     final Paint innerBorderPaint = Paint()
       ..color = borderColor
-      ..strokeCap = StrokeCap.butt
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0; // Inner grid lines stay thin
+      ..strokeWidth = .5; // Inner grid lines stay thin
 
     // NEW: Paint for the Outer Edge
     final Paint outerBorderPaint = Paint()
