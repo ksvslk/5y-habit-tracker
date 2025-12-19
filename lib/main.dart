@@ -8,16 +8,14 @@ import 'ui/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+   // Initialize Notifications
+  final container = ProviderContainer();
+  await container.read(notificationServiceProvider).init();
+
+  // Initialize Gemma
   await FlutterGemma.initialize();
-
-  // Initialize Notifications
-  final notificationService = NotificationService();
-  await notificationService.init();
-  await notificationService.requestPermissions(); // Ask for permission immediately or on settings page
   
-  // Schedule the reminder (You might want to do this based on user settings)
-  await notificationService.scheduleDailyNotification();
-
   // 1. Enable Edge-to-Edge (Android 10+)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

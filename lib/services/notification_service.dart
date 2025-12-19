@@ -5,7 +5,15 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
-// Global navigation key
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+part 'notification_service.g.dart';
+
+// 1. Create the provider
+@Riverpod(keepAlive: true)
+NotificationService notificationService(NotificationServiceRef ref) {
+  return NotificationService();
+}
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class NotificationService {
@@ -17,46 +25,38 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
-    // 1. Initialize Timezone DB
     tz.initializeTimeZones();
 
-    // 2. Get Local Timezone
     String timeZoneName;
     try {
-      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-      // TimezoneInfo has an 'identifier' property that contains the timezone string
-      timeZoneName = timezoneInfo.identifier;
+      final timezoneResult = await FlutterTimezone.getLocalTimezone();
+      timeZoneName = timezoneResult.identifier;
     } catch (e) {
-      // Fallback if there's any error
       timeZoneName = 'UTC';
     }
 
-    // 3. Set Location
     try {
       tz.setLocalLocation(tz.getLocation(timeZoneName));
     } catch (e) {
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
-    // 4. Android Init Settings
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('ic_launcher_foreground');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
-    // 5. iOS Init Settings
-    final DarwinInitializationSettings initializationSettingsDarwin =
+    const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
           requestAlertPermission: true,
           requestBadgePermission: true,
           requestSoundPermission: true,
         );
 
-    final InitializationSettings initializationSettings =
+    const InitializationSettings initializationSettings =
         InitializationSettings(
           android: initializationSettingsAndroid,
           iOS: initializationSettingsDarwin,
         );
 
-    // 6. Initialize Plugin
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
@@ -65,34 +65,78 @@ class NotificationService {
         }
       },
     );
+
+    await _createNotificationChannel();
   }
 
-Future<void> scheduleDailyNotification() async {
-  await flutterLocalNotificationsPlugin.zonedSchedule(
-    0,
-    'Daily Check-in',
-    'Time to log your habits for today!',
-    _nextInstanceOfTime(23, 59),
-    const NotificationDetails(
-      android: AndroidNotificationDetails(
-        'daily_channel_id',
-        'Daily Reminders',
-        channelDescription: 'Reminders to check in on your habits',
-        importance: Importance.max,
-        priority: Priority.high,
-      ),
-      iOS: DarwinNotificationDetails(),
-    ),
-    // 1. Keep this for Android 13+ compatibility
-    androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-    
-    // 2. This line was removed in recent plugin versions - DELETE IT
-    // uiLocalNotificationDateInterpretation: ... 
+  Future<void> _createNotificationChannel() async {
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'daily_channel_id',
+      'Daily Reminders',
+      description: 'Reminders to check in on your habits',
+      importance: Importance.high,
+    );
 
-    matchDateTimeComponents: DateTimeComponents.time,
-    payload: 'daily_check_in',
-  );
-}
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
+  }
+
+  Future<void> showTestNotification() async {
+    await flutterLocalNotificationsPlugin.show(
+      888,
+      'Test Notification',
+      'If you see this, notifications are working!',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_channel_id',
+          'Daily Reminders',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
+
+  Future<void> scheduleDailyNotification(int hour, int minute) async {
+    // 1. Cancel old notifications so we don't pile them up
+    await flutterLocalNotificationsPlugin.cancel(0);
+
+    // 2. Calculate the next time (e.g. 20:00)
+    final scheduledTime = _nextInstanceOfTime(hour, minute);
+    print('Scheduling notification for: $scheduledTime');
+
+    // 3. Schedule the new one
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      0,
+      'Daily Check-in',
+      'Time to log your habits for today!',
+      scheduledTime,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_channel_id',
+          'Daily Reminders',
+          channelDescription: 'Reminders to check in on your habits',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      // If this line works, keep it. If "AndroidScheduleMode" is also red, remove it too.
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'daily_check_in',
+    );
+  }
+
+  // 2. ADD THIS NEW METHOD: To turn it off
+  Future<void> cancelDailyNotifications() async {
+    await flutterLocalNotificationsPlugin.cancel(0);
+    print('Canceled daily notifications');
+  }
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
@@ -111,10 +155,13 @@ Future<void> scheduleDailyNotification() async {
   }
 
   Future<void> requestPermissions() async {
-    await flutterLocalNotificationsPlugin
+    final androidImplementation = flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
+        >();
+
+    if (androidImplementation != null) {
+      await androidImplementation.requestNotificationsPermission();
+    }
   }
 }

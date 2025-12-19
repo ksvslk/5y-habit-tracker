@@ -1,3 +1,4 @@
+import 'package:fiveyear/data/app_settings_schema.dart';
 import 'package:fiveyear/data/chat_entity_schema.dart';
 import 'package:fiveyear/data/habit_schema.dart';
 import 'package:isar/isar.dart';
@@ -9,7 +10,7 @@ final isarDatabaseProvider = FutureProvider<Isar>((ref) async {
   
   if (Isar.instanceNames.isEmpty) {
     return await Isar.open(
-      [HabitSchema, ChatEntitySchema],
+      [HabitSchema, ChatEntitySchema, AppSettingsSchema],
       directory: dir.path,
       inspector: true,
     );

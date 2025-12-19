@@ -1,19 +1,33 @@
-import 'dart:io';
+import 'package:fiveyear/data/app_settings_provider.dart';
 import 'package:fiveyear/data/habit_provider.dart';
-import 'package:fiveyear/main.dart';
 import 'package:fiveyear/ui/screens/add_habit_screen.dart';
 import 'package:fiveyear/ui/screens/chat_screen.dart';
-import 'package:fiveyear/ui/screens/daily_checkin_screen.dart';
+import 'package:fiveyear/ui/screens/settings_screen.dart';
+import 'package:fiveyear/ui/widgets/first_launch_dialog.dart';
 import 'package:fiveyear/ui/widgets/habit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/habit_schema.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+
+    ref.listen(appSettingsProvider, (previous, next) {
+      next.whenData((settings) {
+        if (settings.isFirstLaunch) {
+          // Show dialog after the current frame is built
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+             showDialog(
+               context: context,
+               barrierDismissible: false, // User MUST complete it
+               builder: (_) => const FirstLaunchDialog(),
+             );
+          });
+        }
+      });
+    });
+
     final habitsAsync = ref.watch(habitsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = Theme.of(context).colorScheme.surface;
@@ -31,6 +45,33 @@ class HomeScreen extends ConsumerWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            actions: [
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'settings') {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsScreen(),
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    const PopupMenuItem<String>(
+                      value: 'settings',
+                      child: Row(
+                        children: [
+                          Icon(Icons.settings, color: Colors.grey),
+                          SizedBox(width: 8),
+                          Text('Settings'),
+                        ],
+                      ),
+                    ),
+                  ];
+                },
+              ),
+            ],
             backgroundColor: surfaceColor,
             elevation: 0,
             iconTheme: IconThemeData(
@@ -130,13 +171,13 @@ class HomeScreen extends ConsumerWidget {
             FloatingActionButton.large(
               heroTag: 'chat_btn',
               onPressed: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ChatScreen()),
+                );
               },
               backgroundColor: isDark ? Colors.white : Colors.black,
               foregroundColor: isDark ? Colors.black : Colors.white,
-              child: const Icon(Icons.blur_on),
+              child: const Icon(Icons.auto_awesome),
             ),
 
             // Add Habit Button

@@ -9,7 +9,11 @@ PODS:
     - TensorFlowLiteC (= 0.0.1-nightly.20250619)
     - TensorFlowLiteSelectTfOps (= 0.0.1-nightly.20250619)
     - TensorFlowLiteSwift (= 0.0.1-nightly.20250619)
+  - flutter_local_notifications (0.0.1):
+    - Flutter
   - flutter_native_splash (2.4.3):
+    - Flutter
+  - flutter_timezone (0.0.1):
     - Flutter
   - isar_flutter_libs (1.0.0):
     - Flutter
@@ -43,7 +47,9 @@ DEPENDENCIES:
   - background_downloader (from `.symlinks/plugins/background_downloader/ios`)
   - Flutter (from `Flutter`)
   - flutter_gemma (from `.symlinks/plugins/flutter_gemma/ios`)
+  - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
+  - flutter_timezone (from `.symlinks/plugins/flutter_timezone/ios`)
   - isar_flutter_libs (from `.symlinks/plugins/isar_flutter_libs/ios`)
   - large_file_handler (from `.symlinks/plugins/large_file_handler/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
@@ -66,8 +72,12 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_gemma:
     :path: ".symlinks/plugins/flutter_gemma/ios"
+  flutter_local_notifications:
+    :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_native_splash:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
+  flutter_timezone:
+    :path: ".symlinks/plugins/flutter_timezone/ios"
   isar_flutter_libs:
     :path: ".symlinks/plugins/isar_flutter_libs/ios"
   large_file_handler:
@@ -85,7 +95,9 @@ SPEC CHECKSUMS:
   background_downloader: a05c77d32a0d70615b9c04577aa203535fc924ff
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_gemma: 8654b275236dfe7a55873436d0c9dac75593687d
+  flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
   flutter_native_splash: df59bb2e1421aa0282cb2e95618af4dcb0c56c29
+  flutter_timezone: ac3da59ac941ff1c98a2e1f0293420e020120282
   isar_flutter_libs: b69f437aeab9c521821c3f376198c4371fa21073
   large_file_handler: e3686e246052b0f03955789d3a04604574f80afe
   MediaPipeTasksGenAI: 076ba7032a6e9da16db9c7cf0c3b67c751c18bc1
