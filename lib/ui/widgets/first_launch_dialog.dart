@@ -11,12 +11,13 @@ class FirstLaunchDialog extends ConsumerStatefulWidget {
 }
 
 class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
-  // Default to 8:00 PM
   TimeOfDay _selectedTime = const TimeOfDay(hour: 20, minute: 0);
   bool _enableNotifications = false;
 
   @override
   Widget build(BuildContext context) {
+    // We use AlertDialog widget here, but since it's in a Stack, 
+    // it will just render the box.
     return AlertDialog(
       title: const Text('Daily Check-in'),
       content: Column(
@@ -24,14 +25,12 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
         children: [
           const Text('When should we remind you?'),
           const SizedBox(height: 20),
-
-          // 1. Time Picker Button
           InkWell(
             onTap: () async {
               final picked = await showTimePicker(
                 context: context,
                 initialTime: _selectedTime,
-                initialEntryMode: TimePickerEntryMode.input, // Faster for users
+                initialEntryMode: TimePickerEntryMode.input,
               );
               if (picked != null) {
                 setState(() => _selectedTime = picked);
@@ -52,21 +51,30 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
-          // 2. Notification Switch
           SwitchListTile(
             title: const Text('Get Notified'),
             value: _enableNotifications,
             onChanged: (val) async {
-              setState(() => _enableNotifications = val);
-
-              // 3. ASK PERMISSIONS IMMEDIATELY if toggled ON
+              // --- CHANGED: Check Permissions here too ---
               if (val) {
-                await ref
+                final granted = await ref
                     .read(notificationServiceProvider)
                     .requestPermissions();
+                
+                if (granted) {
+                  setState(() => _enableNotifications = true);
+                } else {
+                   // Denied - toggle remains off
+                   setState(() => _enableNotifications = false);
+                   if (mounted) {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       const SnackBar(content: Text('Notifications permission denied')),
+                     );
+                   }
+                }
+              } else {
+                setState(() => _enableNotifications = false);
               }
             },
           ),
@@ -77,7 +85,7 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
           onPressed: () {
             _saveAndClose();
           },
-          child: const Text('Start Journey'),
+          child: const Text('Done'),
         ),
       ],
     );
@@ -93,11 +101,13 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
       _selectedTime.minute,
     );
 
-    // USE THE NEW SINGLE METHOD
+    // This updates the provider state. 
+    // Because HomeScreen watches this provider, 'isFirstLaunch' becomes false,
+    // causing the Stack to rebuild and remove this overlay instantly.
     await ref
         .read(appSettingsRepositoryProvider)
         .finalizeOnboarding(_enableNotifications, reminderTime);
-
-    if (mounted) Navigator.of(context).pop();
+        
+    // No need to call Navigator.pop() because we are not in a pushed route anymore.
   }
 }

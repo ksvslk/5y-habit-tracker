@@ -1,9 +1,9 @@
-import 'dart:math'; 
+import 'dart:math';
 import 'package:fiveyear/data/habit_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/habit_schema.dart';
-import '../../data/theme_colors.dart'; 
+import '../../data/theme_colors.dart';
 
 class AddHabitScreen extends ConsumerStatefulWidget {
   const AddHabitScreen({super.key});
@@ -15,82 +15,53 @@ class AddHabitScreen extends ConsumerStatefulWidget {
 class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   String name = '';
   String selectedTheme = 'scholar';
+  
+  // 1. We can leave this as green or any color, 
+  // because it will be overwritten instantly in initState.
   Color backendColor = Colors.green; 
   
-  // Default Icon
   IconData selectedIcon = Icons.emoji_events;
+
+  // --- STATE FOR "1-2-3" FLOW ---
+  int _activeStep = 1;
+  late FocusNode _nameFocusNode;
+  late FocusNode _iconFocusNode;
 
   // --- ICON LIBRARY ---
   final List<IconData> _availableIcons = [
-    // 1. GENERAL / PRODUCTIVITY
     Icons.emoji_events, Icons.star, Icons.flag, Icons.check_circle,
     Icons.timeline, Icons.lightbulb, Icons.bolt, Icons.local_fire_department,
     Icons.access_alarm, Icons.timer, Icons.schedule, Icons.today,
-    Icons.done_all, Icons.priority_high, Icons.list, Icons.category,
-
-    // 2. SPORTS & FITNESS
-    Icons.directions_run, Icons.fitness_center, Icons.pool, Icons.directions_bike,
-    Icons.hiking, Icons.kayaking, Icons.rowing, Icons.downhill_skiing,
-    Icons.snowboarding, Icons.skateboarding, Icons.surfing, Icons.kitesurfing,
-    Icons.sports_soccer, Icons.sports_tennis, Icons.sports_basketball, Icons.sports_football,
-    Icons.sports_baseball, Icons.sports_volleyball, Icons.sports_golf, Icons.sports_cricket,
-    Icons.sports_mma, Icons.sports_kabaddi, Icons.sports_hockey, Icons.sports_rugby,
-    Icons.sports_handball, Icons.sports_motorsports, Icons.roller_skating, Icons.ice_skating,
-    
-    // 3. HEALTH & WELLNESS
-    Icons.self_improvement, Icons.spa, Icons.water_drop, Icons.bed,
-    Icons.monitor_heart, Icons.local_dining, Icons.no_drinks, Icons.smoke_free,
-    Icons.medication, Icons.healing, Icons.monitor_weight, Icons.hotel,
-    Icons.bathtub, Icons.accessibility_new, Icons.mood, Icons.sentiment_very_satisfied,
-    
-    // 4. LEARNING & WORK
-    Icons.book, Icons.school, Icons.menu_book, Icons.edit,
-    Icons.computer, Icons.code, Icons.work, Icons.business_center,
-    Icons.assignment, Icons.calendar_today, Icons.access_time, Icons.language,
-    Icons.science, Icons.psychology, Icons.calculate, Icons.architecture,
-    Icons.biotech, Icons.history_edu, Icons.design_services, Icons.translate,
-
-    // 5. CREATIVITY & ARTS
-    Icons.palette, Icons.brush, Icons.camera_alt, Icons.music_note,
-    Icons.headphones, Icons.mic, Icons.movie, Icons.theater_comedy,
-    Icons.piano, Icons.photo_camera, Icons.draw, Icons.create,
-    Icons.video_camera_back, Icons.lyrics, Icons.speaker, Icons.album,
-
-    // 6. FINANCE
-    Icons.attach_money, Icons.savings, Icons.account_balance_wallet, Icons.trending_up,
-    Icons.euro, Icons.currency_pound, Icons.currency_yen, Icons.pie_chart,
-    Icons.show_chart, Icons.bar_chart, Icons.credit_card, Icons.receipt_long,
-    
-    // 7. LIFESTYLE, HOME & CHORES
-    Icons.home, Icons.cleaning_services, Icons.local_laundry_service, Icons.bedtime,
-    Icons.shopping_cart, Icons.restaurant, Icons.local_cafe, Icons.kitchen,
-    Icons.chair, Icons.weekend, Icons.family_restroom, Icons.child_care,
-    Icons.pets, Icons.cruelty_free, Icons.volunteer_activism, Icons.church,
-    Icons.mosque, Icons.synagogue, Icons.temple_buddhist, Icons.temple_hindu,
-    Icons.iron, Icons.grass, Icons.construction, Icons.handyman,
-
-    // 8. NATURE & TRAVEL
-    Icons.forest, Icons.park, Icons.terrain, Icons.wb_sunny,
-    Icons.nightlight_round, Icons.flight, Icons.directions_car, Icons.train,
-    Icons.directions_boat, Icons.map, Icons.explore, Icons.public,
-    Icons.compost, Icons.recycling, Icons.nature_people,
-    Icons.sailing, Icons.two_wheeler, Icons.directions_bus, Icons.commute,
-
-    // 9. TECH & GAMING
-    Icons.smartphone, Icons.gamepad, Icons.sports_esports, Icons.laptop,
-    Icons.memory, Icons.security, Icons.wifi, Icons.battery_charging_full,
-    Icons.keyboard, Icons.mouse, Icons.developer_mode, Icons.router,
+    Icons.fitness_center, Icons.book, Icons.water_drop, Icons.directions_run,
+    Icons.bed, Icons.restaurant, Icons.work, Icons.code, Icons.music_note,
+    Icons.palette, Icons.local_florist, Icons.self_improvement,
   ];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateSelectedColor();
+    _nameFocusNode = FocusNode();
+    _iconFocusNode = FocusNode();
+
+    // Listeners to update the active step visual
+    _nameFocusNode.addListener(() {
+      if (_nameFocusNode.hasFocus) setState(() => _activeStep = 1);
     });
+
+    // 2. KEY FIX: Calculate the initial color synchronously here.
+    // This happens before the widget is ever built, preventing the flash.
+    backendColor = _getColorForTheme(selectedTheme);
+  }
+
+  @override
+  void dispose() {
+    _nameFocusNode.dispose();
+    _iconFocusNode.dispose();
+    super.dispose();
   }
 
   Color _getColorForTheme(String themeKey) {
+    // Ensure themeData is imported correctly from your data/theme_colors.dart
     if (!themeData.containsKey(themeKey)) return Colors.grey;
     final List<Color> colors = themeData[themeKey]['colors'];
     if (colors.isEmpty) return Colors.black;
@@ -102,10 +73,8 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final HSLColor hsl = HSLColor.fromColor(color);
     if (isDark) {
-      // FIX 1: Push lightness higher (0.65) and ensure saturation (0.6)
-      // This ensures the color is "Bright" enough to glow against black.
       return hsl
-          .withLightness(max(hsl.lightness, 0.65)) 
+          .withLightness(max(hsl.lightness, 0.65))
           .withSaturation(max(hsl.saturation, 0.6))
           .toColor();
     } else {
@@ -123,91 +92,66 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     if (name.isEmpty) return;
     final newHabit = Habit()
       ..name = name
-      ..colorValue = backendColor.value 
+      ..colorValue = backendColor.value
       ..theme = selectedTheme
       ..customImagePath = null
-      ..iconCodePoint = selectedIcon.codePoint 
+      ..iconCodePoint = selectedIcon.codePoint
       ..completedDays = [];
 
     ref.read(habitRepositoryProvider).addHabit(newHabit);
     Navigator.pop(context);
   }
 
-  void _showIconPicker() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+  // --- HELPER ---
+  Widget _buildStepSection({
+    required int stepNumber,
+    required String title,
+    required Widget child,
+    required Color activeColor,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final isActive = (_activeStep == stepNumber);
+    final borderColor = isActive ? activeColor : Colors.transparent;
+    final cardColor = isDark ? Colors.grey[900]!.withOpacity(0.5) : Colors.white;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true, 
-      backgroundColor: bgColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 2),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                      color: activeColor.withOpacity(0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4))
+                ]
+              : [],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "$stepNumber. $title",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isActive
+                    ? activeColor
+                    : (isDark ? Colors.grey[500] : Colors.grey[600]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
       ),
-      builder: (BuildContext context) {
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2)),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "Select Icon",
-                style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black
-                )
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: _availableIcons.length,
-                  itemBuilder: (context, index) {
-                    final icon = _availableIcons[index];
-                    final isSelected = (icon == selectedIcon);
-                    final iconColor = _getReadableColor(backendColor);
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => selectedIcon = icon);
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          // FIX 2: Use iconColor (bright) for background tint too
-                          color: isSelected 
-                            ? iconColor.withOpacity(0.3) 
-                            : (isDark ? Colors.grey[800] : Colors.grey[100]),
-                          shape: BoxShape.circle,
-                          border: isSelected 
-                            ? Border.all(color: iconColor, width: 2) 
-                            : null,
-                        ),
-                        child: Icon(
-                          icon,
-                          size: 28,
-                          color: isSelected ? iconColor : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -216,165 +160,195 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
     final surfaceColor = Theme.of(context).colorScheme.surface;
-    
-    final Color activeColor = _getReadableColor(backendColor);
-    final Color createBtnColor = name.isNotEmpty 
-        ? activeColor 
-        : (isDark ? Colors.grey[700]! : Colors.grey[300]!);
+    final activeColor = _getReadableColor(backendColor);
 
-    return Scaffold(
-      backgroundColor: surfaceColor,
-      appBar: AppBar(
-        title: Text("New Habit", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+    return GestureDetector(
+      // Handles tapping background to close keyboard
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
         backgroundColor: surfaceColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.close, color: textColor),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          title: Text("New Habit",
+              style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+          backgroundColor: surfaceColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.close, color: textColor),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: [
+            TextButton(
+                onPressed: name.isNotEmpty ? _createHabit : null,
+                child: Text("Create",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: activeColor)))
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: name.isNotEmpty ? _createHabit : null, 
-            child: Text(
-              "Create", 
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: createBtnColor)
-            )
-          )
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- 1. NAME INPUT ---
-              TextField(
-                autofocus: false,
-                style: TextStyle(color: textColor),
-                cursorColor: activeColor,
-                decoration: InputDecoration(
-                  labelText: "Habit",
-                  labelStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
-                  filled: true, 
-                  fillColor: isDark ? Colors.grey[900] : const Color(0xFFF8FAFC), 
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)), 
-                    borderSide: BorderSide.none
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    borderSide: BorderSide(color: activeColor, width: 2),
-                  ),
-                ), 
-                onChanged: (val) {
-                   setState(() => name = val);
-                   _updateSelectedColor(); 
-                }
-              ),
-              
-              const SizedBox(height: 32),
-
-              // --- 2. ICON SELECTOR ---
-              GestureDetector(
-                onTap: _showIconPicker,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.grey[900] : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          // FIX 3: Use activeColor (bright) for the small preview bubble too
-                          color: activeColor.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(selectedIcon, color: activeColor),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        "Select Icon",
-                        style: TextStyle(color: textColor, fontSize: 16),
-                      ),
-                      const Spacer(),
-                      Icon(Icons.chevron_right, color: isDark ? Colors.grey[600] : Colors.grey[400]),
-                    ],
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                // --- STEP 1: HABIT ---
+                _buildStepSection(
+                  stepNumber: 1,
+                  title: "HABIT",
+                  activeColor: activeColor,
+                  isDark: isDark,
+                  onTap: () {
+                    setState(() => _activeStep = 1);
+                    _nameFocusNode.requestFocus();
+                  },
+                  child: TextField(
+                    focusNode: _nameFocusNode,
+                    autofocus: true,
+                    textInputAction: TextInputAction.next,
+                    style: TextStyle(color: textColor, fontSize: 18),
+                    cursorColor: activeColor,
+                    decoration: InputDecoration(
+                      hintText: "e.g. Read 10 pages",
+                      hintStyle: TextStyle(
+                          color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onChanged: (val) {
+                      setState(() => name = val);
+                      _updateSelectedColor();
+                    },
+                    onSubmitted: (_) {
+                      setState(() => _activeStep = 2);
+                      _nameFocusNode.unfocus();
+                    },
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 32),
-              
-              // --- 3. THEME SELECTION ---
-              Text(
-                "Select Theme", 
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)
-              ),
-              const SizedBox(height: 12),
+                // --- STEP 2: ICON ---
+                _buildStepSection(
+                  stepNumber: 2,
+                  title: "ICON",
+                  activeColor: activeColor,
+                  isDark: isDark,
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                    setState(() => _activeStep = 2);
+                  },
+                  child: SizedBox(
+                    height: 60,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _availableIcons.length,
+                      itemBuilder: (context, index) {
+                        final icon = _availableIcons[index];
+                        final isSelected = (icon == selectedIcon);
+                        
+                        return GestureDetector(
+                          onTap: () {
+                            FocusScope.of(context).unfocus();
+                            setState(() {
+                              selectedIcon = icon;
+                              _activeStep = 2;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 60,
+                            margin: const EdgeInsets.only(right: 12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? activeColor.withOpacity(0.2)
+                                  : (isDark
+                                      ? Colors.grey[800]
+                                      : Colors.grey[100]),
+                              shape: BoxShape.circle,
+                              border: isSelected
+                                  ? Border.all(color: activeColor, width: 2)
+                                  : Border.all(color: Colors.transparent),
+                            ),
+                            child: Icon(
+                              icon,
+                              size: 28,
+                              color: isSelected
+                                  ? activeColor
+                                  : (isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[500]),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
 
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // Calculate how many buttons can fit per row
-                  final buttonWidth = (constraints.maxWidth - 12) / 2; // 2 columns with spacing
-                  
-                  return Wrap(
-                    spacing: 12, 
-                    runSpacing: 12, 
-                    alignment: WrapAlignment.start, 
-                    children: themeData.entries.map((e) {
-                      final key = e.key;
-                      final data = e.value;
-                      final isSelected = (selectedTheme == key);
-                      final rawColor = _getColorForTheme(key);
-                      final contrastColor = _getReadableColor(rawColor);
-                      
-                      final inactiveBg = isDark ? Colors.grey[900]! : const Color(0xFFF4F4F5);
-                      final inactiveText = isDark ? Colors.grey[400] : Colors.black87;
+                // --- STEP 3: THEME ---
+                _buildStepSection(
+                  stepNumber: 3,
+                  title: "THEME",
+                  activeColor: activeColor,
+                  isDark: isDark,
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                    setState(() => _activeStep = 3);
+                  },
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    final buttonWidth = (constraints.maxWidth - 12) / 2;
+                    return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: themeData.entries.map((e) {
+                          final key = e.key;
+                          final data = e.value;
+                          final isSelected = (selectedTheme == key);
+                          final rawColor = _getColorForTheme(key);
+                          final contrastColor = _getReadableColor(rawColor);
 
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() { 
-                            selectedTheme = key; 
-                            _updateSelectedColor(); 
-                          });
-                        }, 
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: buttonWidth,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), 
-                          decoration: BoxDecoration(
-                            color: isSelected 
-                                ? contrastColor.withOpacity(isDark ? 0.25 : 0.15) 
-                                : inactiveBg, 
-                            border: Border.all(
-                              color: isSelected ? contrastColor : Colors.transparent, 
-                              width: 2
-                            ), 
-                            borderRadius: BorderRadius.circular(12)
-                          ), 
-                          child: Center(
-                            child: Text(
-                              data['name'], 
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                color: isSelected ? contrastColor : inactiveText 
-                              )
-                            )
-                          )
-                        )
-                      );
-                    }).toList()
-                  );
-                }
-              ),
-              
-              const SizedBox(height: 40),
-            ],
+                          final inactiveBg = isDark
+                              ? Colors.grey[800]!
+                              : const Color(0xFFF4F4F5);
+                          final inactiveText =
+                              isDark ? Colors.grey[400] : Colors.black87;
+
+                          return GestureDetector(
+                              onTap: () {
+                                FocusScope.of(context).unfocus();
+                                setState(() {
+                                  _activeStep = 3;
+                                  selectedTheme = key;
+                                  _updateSelectedColor();
+                                });
+                              },
+                              child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  width: buttonWidth,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 12),
+                                  decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? contrastColor.withOpacity(0.2)
+                                          : inactiveBg,
+                                      border: Border.all(
+                                          color: isSelected
+                                              ? contrastColor
+                                              : Colors.transparent,
+                                          width: 2),
+                                      borderRadius: BorderRadius.circular(10)),
+                                  child: Center(
+                                      child: Text(data['name'],
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                              color: isSelected
+                                                  ? contrastColor
+                                                  : inactiveText)))));
+                        }).toList());
+                  }),
+                ),
+              ],
+            ),
           ),
         ),
       ),

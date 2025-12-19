@@ -11,6 +11,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../data/habit_schema.dart';
 import '../../data/habit_provider.dart';
 import '../../data/theme_colors.dart'; 
+import 'edit_habit_screen.dart'; 
 
 // -----------------------------------------------------------------------------
 // 1. ISOLATED LOGIC
@@ -39,7 +40,6 @@ HashSet<int> _parseDataInIsolate(IsolateInput input) {
       final y = int.tryParse(parts[0]);
       final d = int.tryParse(parts[1]);
       if (y != null && d != null) {
-        // We use UTC here to ensure consistency when hydrating from string
         final date = DateTime.utc(y, 1, 1).add(Duration(days: d));
         set.add(date.year * 10000 + date.month * 100 + date.day);
       }
@@ -117,7 +117,7 @@ DateTime _intToDate(int ymd) {
   final y = ymd ~/ 10000;
   final m = (ymd % 10000) ~/ 100;
   final d = ymd % 100;
-  return DateTime.utc(y, m, d); // Use UTC to prevent DST shift errors
+  return DateTime.utc(y, m, d);
 }
 
 // -----------------------------------------------------------------------------
@@ -159,7 +159,6 @@ class CalendarController {
     }
   }
 
-  // UPDATED: Use UTC loop to ensure we don't skip days during DST changeover
   void fillYear(DateTime focusedMonth) {
     HapticFeedback.mediumImpact();
     
@@ -184,7 +183,6 @@ class CalendarController {
     if (onSave != null) onSave!(newSet);
   }
 
-  // UPDATED: Use UTC loop
   void addRandomDates(DateTime focusedMonth) {
     HapticFeedback.mediumImpact();
     final now = DateTime.now();
@@ -256,37 +254,31 @@ class CalendarScreen extends ConsumerStatefulWidget {
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   late final CalendarController _controller;
+  late Habit _currentHabit; 
   bool _showDebugButtons = false;
   late DateTime _focusedMonth;
 
-  // Dynamic colors
-  late Color _currentColor;       // Base pastel color (charts/bg)
-  late Color _activeColor;        // High contrast version for Buttons
-  late Color _readableColor;      // Text/Borders
+  late Color _currentColor;       
+  late Color _activeColor;        
+  late Color _readableColor;      
   final int _anchorYear = DateTime.now().year;
 
-  // Standardization Constant
   static const double _sidePadding = 20.0;
 
 @override
   void initState() {
     super.initState();
     
+    _currentHabit = widget.habit;
+
     final now = DateTime.now();
-    
-    // Determine which year to show (default to current year if null)
     int targetYear = widget.initialYear ?? now.year;
-    
-    // LOGIC FIX: 
-    // If the target year is the CURRENT year, show the CURRENT month.
-    // Otherwise (for past/future years), default to January.
     int targetMonth = (targetYear == now.year) ? now.month : 1;
 
-    // Initialize _focusedMonth using UTC to align with your controller logic
     _focusedMonth = DateTime.utc(targetYear, targetMonth, 1);
 
     _controller = CalendarController();
-    _controller.load(widget.habit.completedDays);
+    _controller.load(_currentHabit.completedDays); 
     _controller.onSave = _handleSave;
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -295,9 +287,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _updateColor(_focusedMonth.year);
+  void didUpdateWidget(CalendarScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.habit != oldWidget.habit) {
+      setState(() {
+        _currentHabit = widget.habit;
+        _updateColor(_focusedMonth.year);
+      });
+    }
   }
 
   void _updateColor(int year) {
@@ -306,18 +303,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     Color newColor;
     try {
-      final themeName = widget.habit.theme;
+      final themeName = _currentHabit.theme;
       if (themeData.containsKey(themeName)) {
         final colors = themeData[themeName]['colors'] as List<Color>;
         newColor = colors[assetIndex - 1];
       } else {
-        newColor = Color(widget.habit.colorValue);
+        newColor = Color(_currentHabit.colorValue);
       }
     } catch (e) {
-      newColor = Color(widget.habit.colorValue);
+      newColor = Color(_currentHabit.colorValue);
     }
 
-    // High Contrast Logic
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     
@@ -358,12 +354,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final list = set.toList();
     compute(_serializeInIsolate, list).then((strings) {
       if (mounted) {
-        ref.read(habitRepositoryProvider).updateHabitDays(widget.habit.id, strings);
+        ref.read(habitRepositoryProvider).updateHabitDays(_currentHabit.id, strings);
       }
     });
   }
   
-  // FIX: Ensure Year Picker uses UTC
   void _showYearPicker() {
     final int currentYear = DateTime.now().year;
     final int startYear = currentYear - 100; 
@@ -420,7 +415,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       onTap: () {
                         Navigator.pop(context);
                         setState(() {
-                          // USE UTC HERE
                           _focusedMonth = DateTime.utc(year, _focusedMonth.month, 1);
                         });
                       },
@@ -447,32 +441,55 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           children: [
             // Header
             Padding(
-              // UPDATED: Standardized padding
               padding: const EdgeInsets.symmetric(horizontal: _sidePadding, vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // LEFT SIDE: Edit Button (Replaced Close 'X')
                   IconButton(
-                    icon: Icon(Icons.close, color: iconColor),
-                    onPressed: () => Navigator.pop(context)
+                    icon: Icon(Icons.edit, color: iconColor),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditHabitScreen(habit: _currentHabit),
+                        ),
+                      );
+                      
+                      if (result == 'DELETED') {
+                        if (mounted) Navigator.pop(context); // Close calendar
+                      } else if (result is Habit) {
+                        setState(() {
+                          _currentHabit = result;
+                          _updateColor(_focusedMonth.year);
+                        });
+                      }
+                    },
                   ),
+                  
+                  // CENTER: Title
                   Text(
-                    widget.habit.name, 
+                    _currentHabit.name,
                     style: TextStyle(
                       fontSize: 18, 
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : Colors.black
                     )
                   ),
+                  
+                  // RIGHT SIDE: Debug + Done (Edit removed from here)
                   Row(
                     children: [
+                      /*
                       IconButton(
                         icon: Icon(Icons.bug_report, color: Colors.grey[400]),
                         onPressed: () => setState(() => _showDebugButtons = !_showDebugButtons),
                       ),
+                      */
+                      // The "Done" button acts as the closer now
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text("Done", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _readableColor)),
+                        child: Text("Back", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _readableColor)),
                       ),
                     ],
                   ),
@@ -483,7 +500,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             if (_showDebugButtons)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                // UPDATED: Standardized margin
                 margin: const EdgeInsets.symmetric(horizontal: _sidePadding),
                 decoration: BoxDecoration(
                   color: isDark ? Colors.grey[800] : Colors.grey[100],
@@ -520,12 +536,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                     const SizedBox(height: 20),
                     
-                    // -----------------------------------------------------------------
-                    // TABLE CALENDAR INTEGRATION
-                    // -----------------------------------------------------------------
-                    
                     Padding(
-                      // UPDATED: Standardized padding
                       padding: const EdgeInsets.symmetric(horizontal: _sidePadding, vertical: 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -534,7 +545,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             icon: Icon(Icons.chevron_left, color: iconColor), 
                             onPressed: () {
                               setState(() {
-                                // Manual UTC control
                                 _focusedMonth = DateTime.utc(_focusedMonth.year, _focusedMonth.month - 1, 1);
                               });
                             }
@@ -556,7 +566,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             icon: Icon(Icons.chevron_right, color: iconColor), 
                             onPressed: () {
                               setState(() {
-                                // Manual UTC control
                                 _focusedMonth = DateTime.utc(_focusedMonth.year, _focusedMonth.month + 1, 1);
                               });
                             }
@@ -566,17 +575,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
 
                     Padding(
-                      // UPDATED: Standardized padding
                       padding: const EdgeInsets.symmetric(horizontal: _sidePadding),
                       child: ValueListenableBuilder<HashSet<int>>(
                         valueListenable: _controller.dates,
                         builder: (context, dateSet, _) {
                           return TableCalendar(
-                            // FIX: Boundaries in UTC to prevent day-skipping
                             firstDay: DateTime.utc(2000, 1, 1),
                             lastDay: DateTime.utc(2100, 12, 31),
                             focusedDay: _focusedMonth,
-                            currentDay: DateTime.now(), // This can remain local for the "Today" marker
+                            currentDay: DateTime.now(), 
                             headerVisible: false, 
                             startingDayOfWeek: StartingDayOfWeek.monday,
                             daysOfWeekStyle: const DaysOfWeekStyle(
@@ -601,8 +608,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             ),
                             
                             onDaySelected: (selectedDay, focusedDay) {
-                              // 1. We removed the "isAfter(now)" check so you can test 2025/Future dates
-                              // 2. We normalize the clicked day to UTC noon to be safe
                               final safeDate = DateTime.utc(selectedDay.year, selectedDay.month, selectedDay.day);
                               _controller.toggle(safeDate);
                             },
@@ -625,15 +630,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final dateInt = date.year * 10000 + date.month * 100 + date.day;
     final isCompleted = dateSet.contains(dateInt);
     
-    // Logic to visually lock future dates
-    // If you want to enable clicking them but still SHOW them as locked, keep this.
-    // Otherwise, comment out the return statement.
-    final isFuture = date.isAfter(DateTime.now());
-    if (isFuture) {
-      // return Center(child: Icon(Icons.lock, size: 14, color: Colors.grey[800])); 
-      // I have commented this out so you can see the dates and click them for testing.
-    }
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     Color textColor;
@@ -659,7 +655,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 }
 
 // -----------------------------------------------------------------------------
-// 4. STATS VIEW (Unchanged)
+// 4. STATS VIEW 
 // -----------------------------------------------------------------------------
 
 class _StatsView extends StatefulWidget {
@@ -750,7 +746,6 @@ class _StatsViewState extends State<_StatsView> {
     final trackColor = isDark ? Colors.grey[800] : Colors.grey[100];
 
     return Container(
-      // UPDATED: Using uniform 20.0 padding (already present)
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -817,7 +812,6 @@ class _StatsViewState extends State<_StatsView> {
     final bgOpacity = isDark ? 0.15 : 0.08;
 
     return Container(
-      // UPDATED: Using uniform 20.0 padding (already present)
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: widget.color.withOpacity(bgOpacity), borderRadius: BorderRadius.circular(20)),
@@ -857,7 +851,6 @@ class _StatsViewState extends State<_StatsView> {
     final bgOpacity = isDark ? 0.15 : 0.08;
     
     return Container(
-      // UPDATED: Using uniform 20.0 padding (already present)
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: widget.color.withOpacity(bgOpacity), borderRadius: BorderRadius.circular(20)),

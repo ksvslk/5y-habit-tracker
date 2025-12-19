@@ -8,7 +8,6 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Watch the stream of settings
     final settingsAsync = ref.watch(appSettingsProvider);
 
     return Scaffold(
@@ -19,7 +18,6 @@ class SettingsScreen extends ConsumerWidget {
         data: (settings) {
           return ListView(
             children: [
-              // --- SECTION: NOTIFICATIONS ---
               ListTile(
                 title: const Text(
                   'Daily Reminder',
@@ -33,28 +31,42 @@ class SettingsScreen extends ConsumerWidget {
                 title: const Text('Enable Notifications'),
                 value: settings.isReminderEnabled,
                 onChanged: (bool value) async {
-                  // 1. ASK PERMISSIONS if enabling
+                  // --- CHANGED LOGIC START ---
                   if (value) {
-                    await ref
+                    // 1. Ask Permission
+                    final bool granted = await ref
                         .read(notificationServiceProvider)
                         .requestPermissions();
-                  }
 
-                  // 2. Update Logic
+                    // 2. If denied, STOP here. Do not update settings.
+                    if (!granted) {
+                      // Optional: Show a snackbar telling them to go to Settings
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Permission denied. Please enable notifications in system settings.',
+                            ),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+                  }
+                  // --- CHANGED LOGIC END ---
+
+                  // 3. Only update if permission granted (or if turning OFF)
                   ref
                       .read(appSettingsRepositoryProvider)
                       .updateDailyReminder(value, settings.dailyReminderTime);
                 },
               ),
-
-              // Only show the Time Picker if enabled
               if (settings.isReminderEnabled)
                 ListTile(
                   title: const Text('Reminder Time'),
                   subtitle: Text(_formatTime(settings.dailyReminderTime)),
                   trailing: const Icon(Icons.access_time),
                   onTap: () async {
-                    // 1. Pick the time
                     final TimeOfDay? picked = await showTimePicker(
                       initialEntryMode: TimePickerEntryMode.inputOnly,
                       context: context,
@@ -63,7 +75,6 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     );
 
-                    // 2. Save it if user picked something
                     if (picked != null) {
                       final now = DateTime.now();
                       final newTime = DateTime(
@@ -76,17 +87,11 @@ class SettingsScreen extends ConsumerWidget {
 
                       ref
                           .read(appSettingsRepositoryProvider)
-                          .updateDailyReminder(
-                            true, // Ensure it stays enabled
-                            newTime,
-                          );
+                          .updateDailyReminder(true, newTime);
                     }
                   },
                 ),
-
               const Divider(),
-
-              // --- SECTION: APPEARANCE ---
               ListTile(
                 title: const Text(
                   'Appearance',
@@ -103,7 +108,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Helper to format DateTime into "8:00 PM" string
   String _formatTime(DateTime? dt) {
     if (dt == null) return "Not set";
     final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);

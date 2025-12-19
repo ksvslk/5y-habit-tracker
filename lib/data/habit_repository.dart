@@ -7,8 +7,6 @@ class HabitRepository {
 
   HabitRepository(this.db);
 
-  // --- No changes to your logic below, just using the injected 'db' ---
-
   Stream<Habit?> watchHabit(int id) async* {
     final isar = await db;
     yield* isar.habits.watchObject(id, fireImmediately: true);
@@ -26,6 +24,13 @@ class HabitRepository {
     });
   }
 
+  Future<void> updateHabit(Habit habit) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.habits.put(habit);
+    });
+  }
+
   Future<void> updateHabitDays(int id, List<String> days) async {
     final isar = await db;
     await isar.writeTxn(() async {
@@ -34,6 +39,14 @@ class HabitRepository {
         habit.completedDays = days;
         await isar.habits.put(habit);
       }
+    });
+  }
+
+  // NEW: Delete method
+  Future<void> deleteHabit(int id) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.habits.delete(id);
     });
   }
 }
