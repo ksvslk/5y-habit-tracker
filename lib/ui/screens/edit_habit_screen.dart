@@ -2,8 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/habit_schema.dart';
-import '../../data/habit_provider.dart'; 
-import '../../data/theme_colors.dart';   
+import '../../data/habit_provider.dart';
+import '../../data/theme_colors.dart';
 
 class EditHabitScreen extends ConsumerStatefulWidget {
   final Habit habit;
@@ -25,12 +25,30 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   late FocusNode _iconFocusNode;
 
   final List<IconData> _availableIcons = [
-    Icons.emoji_events, Icons.star, Icons.flag, Icons.check_circle,
-    Icons.timeline, Icons.lightbulb, Icons.bolt, Icons.local_fire_department,
-    Icons.access_alarm, Icons.timer, Icons.schedule, Icons.today,
-    Icons.fitness_center, Icons.book, Icons.water_drop, Icons.directions_run,
-    Icons.bed, Icons.restaurant, Icons.work, Icons.code, Icons.music_note,
-    Icons.palette, Icons.local_florist, Icons.self_improvement,
+    Icons.emoji_events,
+    Icons.star,
+    Icons.flag,
+    Icons.check_circle,
+    Icons.timeline,
+    Icons.lightbulb,
+    Icons.bolt,
+    Icons.local_fire_department,
+    Icons.access_alarm,
+    Icons.timer,
+    Icons.schedule,
+    Icons.today,
+    Icons.fitness_center,
+    Icons.book,
+    Icons.water_drop,
+    Icons.directions_run,
+    Icons.bed,
+    Icons.restaurant,
+    Icons.work,
+    Icons.code,
+    Icons.music_note,
+    Icons.palette,
+    Icons.local_florist,
+    Icons.self_improvement,
   ];
 
   @override
@@ -41,11 +59,14 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
 
     name = widget.habit.name;
     selectedTheme = widget.habit.theme;
-    selectedIcon = IconData(widget.habit.iconCodePoint!, fontFamily: 'MaterialIcons');
-    
+    selectedIcon = IconData(
+      widget.habit.iconCodePoint!,
+      fontFamily: 'MaterialIcons',
+    );
+
     backendColor = _getColorForTheme(selectedTheme);
     if (backendColor == Colors.black && widget.habit.colorValue != 0) {
-        backendColor = Color(widget.habit.colorValue);
+      backendColor = Color(widget.habit.colorValue);
     }
 
     _nameFocusNode.addListener(() {
@@ -89,7 +110,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
 
   void _saveHabit() {
     if (name.isEmpty) return;
-    
+
     final updatedHabit = widget.habit
       ..name = name
       ..colorValue = backendColor.value
@@ -97,7 +118,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
       ..iconCodePoint = selectedIcon.codePoint;
 
     ref.read(habitRepositoryProvider).updateHabit(updatedHabit);
-    
+
     Navigator.pop(context, updatedHabit);
   }
 
@@ -107,18 +128,20 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Delete Habit"),
-        content: const Text("Are you sure you want to delete this habit? This cannot be undone."),
+        content: const Text(
+          "Are you sure you want to delete this habit? This cannot be undone.",
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx), 
-            child: const Text("Cancel")
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx); // Close dialog
               _deleteHabit();
-            }, 
-            child: const Text("Delete", style: TextStyle(color: Colors.red))
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -141,7 +164,9 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   }) {
     final isActive = (_activeStep == stepNumber);
     final borderColor = isActive ? activeColor : Colors.transparent;
-    final cardColor = isDark ? Colors.grey[900]!.withOpacity(0.5) : Colors.white;
+    final cardColor = isDark
+        ? Colors.grey[900]!.withOpacity(0.5)
+        : Colors.white;
 
     return GestureDetector(
       onTap: onTap,
@@ -153,14 +178,10 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
           color: cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: borderColor, width: 2),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                      color: activeColor.withOpacity(0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4))
-                ]
-              : [],
+
+          // CHANGED: Removed the isActive check that added a colored shadow.
+          // We force an empty list so no background glow appears.
+          boxShadow: [],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,22 +216,28 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
       child: Scaffold(
         backgroundColor: surfaceColor,
         appBar: AppBar(
-          title: Text("Edit Habit",
-              style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+          title: Text(
+            "Edit Habit",
+            style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+          ),
           backgroundColor: surfaceColor,
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.close, color: textColor),
-            onPressed: () => Navigator.pop(context), 
+            onPressed: () => Navigator.pop(context),
           ),
           actions: [
             TextButton(
-                onPressed: name.isNotEmpty ? _saveHabit : null,
-                child: Text("Save",
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: activeColor)))
+              onPressed: name.isNotEmpty ? _saveHabit : null,
+              child: Text(
+                "Save",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: activeColor,
+                ),
+              ),
+            ),
           ],
         ),
         body: SafeArea(
@@ -236,7 +263,8 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     decoration: InputDecoration(
                       hintText: "e.g. Read 10 pages",
                       hintStyle: TextStyle(
-                          color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                        color: isDark ? Colors.grey[600] : Colors.grey[400],
+                      ),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
@@ -269,7 +297,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                       itemBuilder: (context, index) {
                         final icon = _availableIcons[index];
                         final isSelected = (icon == selectedIcon);
-                        
+
                         return GestureDetector(
                           onTap: () {
                             FocusScope.of(context).unfocus();
@@ -286,8 +314,8 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                               color: isSelected
                                   ? activeColor.withOpacity(0.2)
                                   : (isDark
-                                      ? Colors.grey[800]
-                                      : Colors.grey[100]),
+                                        ? Colors.grey[800]
+                                        : Colors.grey[100]),
                               shape: BoxShape.circle,
                               border: isSelected
                                   ? Border.all(color: activeColor, width: 2)
@@ -299,8 +327,8 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                               color: isSelected
                                   ? activeColor
                                   : (isDark
-                                      ? Colors.grey[400]
-                                      : Colors.grey[500]),
+                                        ? Colors.grey[400]
+                                        : Colors.grey[500]),
                             ),
                           ),
                         );
@@ -318,9 +346,10 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     FocusScope.of(context).unfocus();
                     setState(() => _activeStep = 3);
                   },
-                  child: LayoutBuilder(builder: (context, constraints) {
-                    final buttonWidth = (constraints.maxWidth - 12) / 2;
-                    return Wrap(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final buttonWidth = (constraints.maxWidth - 12) / 2;
+                      return Wrap(
                         spacing: 12,
                         runSpacing: 12,
                         children: themeData.entries.map((e) {
@@ -333,43 +362,56 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                           final inactiveBg = isDark
                               ? Colors.grey[800]!
                               : const Color(0xFFF4F4F5);
-                          final inactiveText =
-                              isDark ? Colors.grey[400] : Colors.black87;
+                          final inactiveText = isDark
+                              ? Colors.grey[400]
+                              : Colors.black87;
 
                           return GestureDetector(
-                              onTap: () {
-                                FocusScope.of(context).unfocus();
-                                setState(() {
-                                  _activeStep = 3;
-                                  selectedTheme = key;
-                                  _updateSelectedColor();
-                                });
-                              },
-                              child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  width: buttonWidth,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 12),
-                                  decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? contrastColor.withOpacity(0.2)
-                                          : inactiveBg,
-                                      border: Border.all(
-                                          color: isSelected
-                                              ? contrastColor
-                                              : Colors.transparent,
-                                          width: 2),
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: Center(
-                                      child: Text(data['name'],
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                              color: isSelected
-                                                  ? contrastColor
-                                                  : inactiveText)))));
-                        }).toList());
-                  }),
+                            onTap: () {
+                              FocusScope.of(context).unfocus();
+                              setState(() {
+                                _activeStep = 3;
+                                selectedTheme = key;
+                                _updateSelectedColor();
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: buttonWidth,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? contrastColor.withOpacity(0.2)
+                                    : inactiveBg,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? contrastColor
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  data['name'],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: isSelected
+                                        ? contrastColor
+                                        : inactiveText,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
                 ),
 
                 // NEW: Delete Button at bottom
@@ -379,11 +421,11 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     onPressed: _confirmDelete,
                     icon: Icon(Icons.delete_outline, color: Colors.red[400]),
                     label: Text(
-                      "Delete Habit", 
+                      "Delete Habit",
                       style: TextStyle(
-                        color: Colors.red[400], 
-                        fontWeight: FontWeight.bold
-                      )
+                        color: Colors.red[400],
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

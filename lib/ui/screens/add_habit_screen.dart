@@ -121,19 +121,15 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.only(bottom: 24),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: 2),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                      color: activeColor.withOpacity(0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4))
-                ]
-              : [],
-        ),
+decoration: BoxDecoration(
+  color: cardColor,
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(color: borderColor, width: 2),
+  
+  // CHANGED: Removed the isActive check that added a colored shadow.
+  // We force an empty list so no background glow appears.
+  boxShadow: [], 
+),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
