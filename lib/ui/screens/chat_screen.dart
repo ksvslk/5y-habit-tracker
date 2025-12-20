@@ -1,84 +1,12 @@
-import 'package:fiveyear/data/gemma_provider.dart';
-import 'package:fiveyear/data/chat_repository.dart';
+import 'dart:async';
+import 'package:fiveyear/services/chat_controller.dart';
 import 'package:fiveyear/ui/widgets/typing_indicator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-
-// --- DATA MODELS & PROVIDERS ---
-
-class ChatMessage {
-  final ValueNotifier<String> textNotifier;
-  final bool isUser;
-  final DateTime timestamp;
-
-  ChatMessage({required String text, required this.isUser, DateTime? timestamp})
-    : textNotifier = ValueNotifier(text),
-      timestamp = timestamp ?? DateTime.now();
-
-  void append(String token) => textNotifier.value += token;
-}
-
-class ChatHistoryNotifier extends StateNotifier<List<ChatMessage>> {
-  final ChatRepository _repository;
-  bool _isLoadingHistory = false;
-
-  ChatHistoryNotifier(this._repository) : super([]) {
-    _loadHistory();
-  }
-
-  Future<void> _loadHistory() async {
-    if (_isLoadingHistory) return; // Prevent duplicate loads
-    _isLoadingHistory = true;
-
-    try {
-      // 1. Fetch from Repository
-      final entities = await _repository.getHistory();
-
-      // 2. Convert to UI Model
-      final messages = entities
-          .map(
-            (e) => ChatMessage(
-              text: e.text ?? "",
-              isUser: e.isUser ?? false,
-              timestamp: e.timestamp ?? DateTime.now(),
-            ),
-          )
-          .toList();
-
-      // 3. Set state only once
-      state = messages;
-    } finally {
-      _isLoadingHistory = false;
-    }
-  }
-
-  Future<void> addInteraction(ChatMessage userMsg, ChatMessage aiMsg) async {
-    // Update UI immediately
-    state = [aiMsg, userMsg, ...state];
-
-    // Save User Message to DB
-    await _repository.saveMessage(userMsg.textNotifier.value, true);
-  }
-
-  Future<void> saveAiResponse(ChatMessage aiMsg) async {
-    // Save AI Message to DB
-    await _repository.saveMessage(aiMsg.textNotifier.value, false);
-  }
-
-  Future<void> clear() async {
-    state = [];
-    await _repository.clearHistory();
-  }
-}
-
-final chatHistoryProvider =
-    StateNotifierProvider<ChatHistoryNotifier, List<ChatMessage>>((ref) {
-      final repo = ref.watch(chatRepositoryProvider);
-      return ChatHistoryNotifier(repo);
-    });
-
-// --- UI ---
+import 'package:markdown/markdown.dart' as md;
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -90,143 +18,171 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
 
+  // --- OLD LAYOUT CONSTANTS ---
   static const Color emeraldStroke = Color(0xFF064E3B);
   static const Color seafoamBg = Color(0xFFECFDF5);
   static const Color progressGreen = Color(0xFF10B981);
   static const Color mintLight = Color(0xFFD1FAE5);
+  static const Color warningYellow = Color(0xFFFBBF24);
+  static const Color dangerRed = Color(0xFFEF4444);
+
+  // --- TOP SNACKBAR STATE ---
+  bool _isSnackbarVisible = false;
+  String _snackbarMessage = "";
+  Timer? _snackbarTimer;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkInit();
+    // No explicit init needed; Controller inits itself.
+  }
+
+  void _showTopSnackbar(String message) {
+    setState(() {
+      _snackbarMessage = message;
+      _isSnackbarVisible = true;
+    });
+    _snackbarTimer?.cancel();
+    _snackbarTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _isSnackbarVisible = false;
+        });
+      }
     });
   }
 
-  void _checkInit() {
-    final state = ref.read(gemmaProvider);
-    // Only init if we are NOT ready and NOT currently loading/downloading
-    if (!state.isReady && !state.isLoading && !state.isDownloading) {
-      ref.read(gemmaProvider.notifier).init();
-    }
+  void _handleSubmitted(ChatController notifier) {
+    final text = _textController.text;
+    if (text.trim().isEmpty) return;
+
+    _textController.clear();
+    notifier.sendMessage(text);
   }
 
-void _handleSubmitted(String text) async {
-    if (text.trim().isEmpty) return;
-    _textController.clear();
-
-    final userMsg = ChatMessage(text: text, isUser: true);
-    final aiMsg = ChatMessage(text: "", isUser: false);
-
-    await ref.read(chatHistoryProvider.notifier).addInteraction(userMsg, aiMsg);
-
-    String buffer = ""; // Temporary holding area
-
-    await for (final token in ref.read(gemmaProvider.notifier).sendMessage(text)) {
-      buffer += token;
-
-      // 1. Clean "Literal" \n (e.g. the text characters \ and n)
-      // We do this in a loop in case a single token contained multiple
-      while (buffer.contains(r'\n')) {
-        buffer = buffer.replaceFirst(r'\n', ' ');
-      }
-
-      // 2. Clean "Actual" control characters (newlines, tabs)
-      buffer = buffer.replaceAll('\n', ' ').replaceAll('\t', ' ');
-
-      // 3. THE MAGIC TRICK:
-      // If the buffer ends with a backslash '\', do NOT show it yet.
-      // It might be the first half of a '\n' that is coming in the next token.
-      if (buffer.endsWith(r'\')) {
-        continue; // Wait for the next token to complete the pattern
-      }
-
-      // 4. Collapse multiple spaces into one
-      // (Only inside the current buffer to avoid lag)
-      if (buffer.contains('  ')) {
-        buffer = buffer.replaceAll(RegExp(r'\s\s+'), ' ');
-      }
-
-      // 5. Append to UI safely
-      if (buffer.isNotEmpty) {
-        // Prevent double-space at the boundary of existing text and new buffer
-        if (aiMsg.textNotifier.value.endsWith(' ') && buffer.startsWith(' ')) {
-          buffer = buffer.trimLeft();
-        }
-        
-        aiMsg.append(buffer);
-        buffer = ""; // Clear buffer since we just flushed it to UI
-      }
-    }
-
-    // 6. Loop done: If anything is left (like a trailing backslash), flush it now.
-    if (buffer.isNotEmpty) {
-       aiMsg.append(buffer);
-    }
-
-    ref.read(chatHistoryProvider.notifier).saveAiResponse(aiMsg);
+  Color _getMemoryColor(double usage) {
+    if (usage < 0.6) return progressGreen;
+    if (usage < 0.8) return warningYellow;
+    return dangerRed;
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(gemmaProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark ? Colors.white : Colors.black;
+    final state = ref.watch(chatControllerProvider);
+    final notifier = ref.read(chatControllerProvider.notifier);
 
-    WakelockPlus.toggle(enable: state.isDownloading);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? Colors.white : Colors.black;
+
+    // Wakelock logic
+    if (state.isDownloading)
+      WakelockPlus.enable();
+    else
+      WakelockPlus.disable();
+
+    // Mapping 'Ready' state from new controller
+    final bool isReady =
+        !state.isLoadingEngine && !state.isDownloading && state.error == null;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Private AI'),
+        title: const Text('On-Device AI'),
         actions: [
-          // Clear Button
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: "Clear Chat History",
-            onPressed: () {
-              ref.read(chatHistoryProvider.notifier).clear();
-            },
-          ),
+          if (isReady)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: "Clear All",
+              onPressed: () async {
+                await notifier.clearMemory();
+                _showTopSnackbar('Memory cleared and reset.');
+              },
+            ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(child: _buildMainContent(state, isDark, color)),
-          _buildBottomArea(state, isDark, color),
+          Column(
+            children: [
+              // 1. MEMORY BAR (Restored Style)
+              if (isReady)
+                SizedBox(
+                  height: 4,
+                  child: LinearProgressIndicator(
+                    value: state.memoryPercentage,
+                    backgroundColor: isDark
+                        ? Colors.white10
+                        : Colors.black.withOpacity(0.05),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      _getMemoryColor(state.memoryPercentage),
+                    ),
+                  ),
+                ),
+
+              // 2. MAIN CONTENT AREA
+              Expanded(
+                child: _buildMainContent(state, notifier, isDark, primaryColor),
+              ),
+
+              // 3. BOTTOM INPUT AREA (Restored Style)
+              _buildBottomArea(state, notifier, isDark, primaryColor),
+            ],
+          ),
+
+          // 4. CUSTOM TOP SNACKBAR
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            top: _isSnackbarVisible ? 0 : -60, // Slide in from top
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 50,
+              color: isDark ? Colors.grey[800] : Colors.black87,
+              child: Center(
+                child: Text(
+                  _snackbarMessage,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMainContent(GemmaState state, bool isDark, Color color) {
-    // Show error if present
+  Widget _buildMainContent(
+    ChatState state,
+    ChatController notifier,
+    bool isDark,
+    Color color,
+  ) {
     if (state.error != null) {
       return Center(
-        child: Padding(
+        // FIX: Wrap in SingleChildScrollView here too
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(32.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Error',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
                 state.error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: const TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
-                  ref.read(gemmaProvider.notifier).downloadAndLoadModel();
-                },
+                onPressed: notifier.downloadAndStart, // Retry logic
                 child: const Text('Try Again'),
               ),
             ],
@@ -235,78 +191,36 @@ void _handleSubmitted(String text) async {
       );
     }
 
-    // 1. If Ready -> Show Chat
-    if (state.isReady) {
-      return _buildChatList(isDark, color);
-    }
-
-    // 2. If checking for model -> Show minimal loading
-    if (state.isCheckingForModel) {
-      return _buildCenteredMessage(
-        isDark,
-        "Checking...",
-        isDark
-            ? 'assets/icons/greyscale_night.png'
-            : 'assets/icons/greyscale.png',
-        showSpinner: true,
-      );
-    }
-
-    // 3. If Downloading -> Show Progress
-    if (state.isDownloading) {
-      return _buildIntroUI(state, isDark);
-    }
-
-    // 4. If Loading (Reading file into memory) -> Show Spinner
-    if (state.isLoading) {
+    // Logic to mimic old "Intro UI" vs "Chat UI"
+    if (state.isLoadingEngine) {
       return _buildCenteredMessage(
         isDark,
         "Waking up...",
         isDark
             ? 'assets/icons/greyscale_night.png'
-            : 'assets/icons/greyscale.png',
+            : 'assets/icons/greyscale.png', // Ensure you have these assets or replace
         showSpinner: true,
       );
     }
 
-    // 5. Default -> Show Intro (Start Setup)
-    return _buildIntroUI(state, isDark);
+    if (state.isDownloading) {
+      return _buildIntroUI(state, notifier, isDark);
+    }
+
+    // If no history and model not loaded (should generally not happen due to auto-load in controller,
+    // but useful for 'fresh install' state if controller logic changes)
+    if (!state.isLoadingEngine &&
+        state.messages.isEmpty &&
+        state.usedTokens <= 50) {
+      // In the new controller, 'usedTokens <= 50' implies empty history roughly.
+      // However, controller auto-starts session.
+      // We can just show the chat list (which handles empty state).
+    }
+
+    return _buildChatList(state, isDark, color);
   }
 
-  Widget _buildCenteredMessage(
-    bool isDark,
-    String text,
-    String asset, {
-    bool showSpinner = false,
-  }) {
-    return Padding(
-      padding: EdgeInsetsGeometry.symmetric(horizontal: 32),
-      child: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Opacity(opacity: 0.4, child: Image.asset(asset, width: 140)),
-          const SizedBox(height: 24),
-          if (showSpinner) ...[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-          ],
-          Text(
-            textAlign: TextAlign.center,
-            text,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-
-  Widget _buildIntroUI(GemmaState state, bool isDark) {
+  Widget _buildIntroUI(ChatState state, ChatController notifier, bool isDark) {
     String img = isDark
         ? 'assets/icons/greyscale_night.png'
         : 'assets/icons/greyscale.png';
@@ -316,7 +230,13 @@ void _handleSubmitted(String text) async {
         padding: const EdgeInsets.all(40),
         child: Column(
           children: [
-            Image.asset(img, width: 180),
+            // Safe image loading or fallback
+            Image.asset(
+              img,
+              width: 180,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.smart_toy, size: 100),
+            ),
             const SizedBox(height: 32),
             const Text(
               "Let's get set up",
@@ -324,7 +244,7 @@ void _handleSubmitted(String text) async {
             ),
             const SizedBox(height: 16),
             Text(
-              "To keep your chats private, I need to download a 'digital brain' once. This takes a few minutes.",
+              "To keep your thoughts private, I need to download a 'digital brain' once. This takes a few minutes.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -333,14 +253,18 @@ void _handleSubmitted(String text) async {
               ),
             ),
             const SizedBox(height: 40),
-            _buildProgressButton(state, isDark),
+            _buildProgressButton(state, notifier, isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProgressButton(GemmaState state, bool isDark) {
+  Widget _buildProgressButton(
+    ChatState state,
+    ChatController notifier,
+    bool isDark,
+  ) {
     final double percentage = state.downloadProgress;
     final bool isDownloading = state.isDownloading;
     final int percentInt = (percentage * 100).round();
@@ -374,11 +298,7 @@ void _handleSubmitted(String text) async {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              // Disable button if we are doing anything active
-              onTap: (state.isLoading || state.isDownloading)
-                  ? null
-                  : () =>
-                        ref.read(gemmaProvider.notifier).downloadAndLoadModel(),
+              onTap: isDownloading ? null : notifier.downloadAndStart,
               child: Center(
                 child: Text(
                   isDownloading ? "Downloading $percentInt%" : "Start Setup",
@@ -396,19 +316,52 @@ void _handleSubmitted(String text) async {
     );
   }
 
-  Widget _buildChatList(bool isDark, Color color) {
-    final messages = ref.watch(chatHistoryProvider);
+  Widget _buildChatList(ChatState state, bool isDark, Color color) {
+    final messages = state.messages;
 
     if (messages.isEmpty) {
-      return _buildCenteredMessage(
-        isDark,
-        "Ready to chat. Use trash bin to clear history or reset AI (it has short memory).",
-        isDark
-            ? 'assets/icons/greyscale_night.png'
-            : 'assets/icons/greyscale.png',
-        showSpinner: false,
+      // FIX: Added SingleChildScrollView here.
+      // This allows the logo/text to scroll when the keyboard squeezes the screen.
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Opacity(
+                opacity: 0.4,
+                child: Image.asset(
+                  isDark
+                      ? 'assets/icons/greyscale_night.png'
+                      : 'assets/icons/greyscale.png',
+                  width: 140,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.chat_bubble_outline, size: 100),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "Unload Your thoughts as...",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                ".. they are NOT sent to servers 🕵️\nThe colored bar shows memory usage.\nYou will need to reset at some point.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
+              ),
+            ],
+          ),
+        ),
       );
     }
+
+    // Normal Chat List (Already scrollable, so this is fine)
     return ListView.builder(
       reverse: true,
       padding: const EdgeInsets.all(16),
@@ -418,8 +371,23 @@ void _handleSubmitted(String text) async {
     );
   }
 
-  Widget _buildBottomArea(GemmaState state, bool isDark, Color color) {
-    if (!state.isReady) return const SizedBox.shrink();
+  Widget _buildBottomArea(ChatState state, ChatController notifier, bool isDark, Color color) {
+    if (state.isLoadingEngine || state.isDownloading) return const SizedBox.shrink();
+
+    void attemptSend() {
+      if (state.isMemoryFull) {
+        _showTopSnackbar("Memory full! Please clear chat to continue.");
+        return;
+      }
+      _handleSubmitted(notifier);
+    }
+
+    // New: Handle Stop Logic
+    void handleStop() {
+      // Assuming your controller has a stop/cancel method. 
+      // If not, we can add a simple one or just reset the thinking state.
+      notifier.stopGeneration(); 
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -428,40 +396,89 @@ void _handleSubmitted(String text) async {
           Expanded(
             child: TextField(
               controller: _textController,
-              enabled: state.isReady,
+              enabled: !state.isThinking, 
               style: const TextStyle(fontSize: 16),
+              onChanged: notifier.onTextChanged,
               decoration: InputDecoration(
-                hintText: "Type a message...",
+                hintText: state.isThinking 
+                    ? "Thinking..." 
+                    : (state.isMemoryFull ? "Memory Full" : "Type a message..."),
                 filled: true,
-                fillColor: isDark
-                    ? Colors.white10
-                    : Colors.black.withOpacity(0.04),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
+                fillColor: isDark ? Colors.white10 : Colors.black.withOpacity(0.04),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
               ),
+              onSubmitted: (_) => attemptSend(),
             ),
           ),
           const SizedBox(width: 12),
           CircleAvatar(
             radius: 26,
-            backgroundColor: state.isReady ? color : color.withOpacity(0.1),
+            // If thinking, we want the button to be active (Red/visible) so user can click stop
+            backgroundColor: state.isThinking 
+                ? (isDark ? Colors.white12 : Colors.black12) // Subtle background for stop
+                : (state.isMemoryFull ? color.withOpacity(0.1) : color),
             child: IconButton(
-              icon: Icon(
-                Icons.arrow_upward,
-                color: isDark ? Colors.black : Colors.white,
-              ),
-              onPressed: state.isReady
-                  ? () => _handleSubmitted(_textController.text)
-                  : null,
+              // CHANGE 1: Icon Logic
+              icon: state.isThinking 
+                ? Icon(Icons.stop_rounded, color: isDark ? Colors.white : Colors.black) // STOP ICON
+                : Icon(
+                    Icons.arrow_upward,
+                    color: state.isMemoryFull 
+                        ? (isDark ? Colors.grey : Colors.grey) 
+                        : (isDark ? Colors.black : Colors.white),
+                  ),
+              // CHANGE 2: Action Logic
+              onPressed: state.isThinking
+                  ? handleStop // Call stop when thinking
+                  : () => attemptSend(),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCenteredMessage(
+    bool isDark,
+    String text,
+    String asset, {
+    bool showSpinner = false,
+  }) {
+    // FIX: Added SingleChildScrollView here as well.
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Opacity(
+              opacity: 0.4,
+              child: Image.asset(
+                asset,
+                width: 140,
+                errorBuilder: (_, __, ___) => const SizedBox(height: 140),
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (showSpinner) ...[
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+            ],
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -470,39 +487,64 @@ void _handleSubmitted(String text) async {
   void dispose() {
     WakelockPlus.disable();
     _textController.dispose();
+    _snackbarTimer?.cancel();
     super.dispose();
   }
 }
 
+// --- BUBBLE WIDGET (RESTORED) ---
 class _Bubble extends StatelessWidget {
   final ChatMessage message;
   final bool isDark;
   final Color color;
+
   const _Bubble({
+    super.key,
     required this.message,
     required this.isDark,
     required this.color,
   });
 
+  /// Launch URLs safely
+  Future<void> _launchUrl(String urlString) async {
+    // 1. Sanitize the URL string (trim whitespace)
+    final Uri? url = Uri.tryParse(urlString.trim());
+
+    // 2. Rigorous null checking
+    if (url != null && await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint("Could not launch url: $urlString");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isUser = message.isUser;
-    
-    // Define bubble background colors
+
+    // Background color logic
     final bubbleColor = isUser
         ? color
         : (isDark ? Colors.white12 : Colors.black.withOpacity(0.05));
 
-    // Define text colors
+    // Text color logic
     final textColor = isUser
         ? (isDark ? Colors.black : Colors.white)
         : (isDark ? Colors.white : Colors.black);
+
+    // Link color logic (Make links pop against the background)
+    final linkColor = isUser
+        ? (isDark ? Colors.black87 : Colors.white70) // User bubble
+        : Colors.blueAccent; // AI bubble
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+        ), // Limit width
         decoration: BoxDecoration(
           color: bubbleColor,
           borderRadius: BorderRadius.circular(20).copyWith(
@@ -511,19 +553,70 @@ class _Bubble extends StatelessWidget {
           ),
         ),
         child: ValueListenableBuilder(
-          valueListenable: message.textNotifier,
-          builder: (_, text, __) {
-            // LOGIC: If it is the AI (not User) and text is empty, show animation
+          valueListenable: message.content,
+          builder: (_, rawText, __) {
+            // --- THE FIX ---
+            // 1. Replace literal '\n' sequences with actual newlines.
+            // 2. Replace literal '\\' sequences with a single backslash.
+            String text = rawText.replaceAll(r'\n', '\n\n');
+
+            // Typing indicator logic
             if (!isUser && text.isEmpty) {
               return TypingIndicator(isDark: isDark);
             }
 
-            // Otherwise show the actual text
-            return Text(
-              text,
-              style: TextStyle(
-                fontSize: 16,
-                color: textColor,
+            // --- MARKDOWN WIDGET ---
+            return MarkdownBody(
+              data: text,
+              selectable: true, // Allows user to copy text
+              softLineBreak: true,
+              extensionSet: md.ExtensionSet.gitHubWeb,
+
+              // Handle Link Clicks
+              onTapLink: (text, href, title) {
+                if (href != null) _launchUrl(href);
+              },
+
+              // Style the Markdown
+              styleSheet: MarkdownStyleSheet(
+                p: TextStyle(fontSize: 16, color: textColor), // Normal text
+                strong: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ), // **Bold**
+                em: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: textColor,
+                ), // *Italic*
+                a: TextStyle(
+                  color: linkColor,
+                  decoration: TextDecoration.underline,
+                ), // Links
+                // Code blocks styling
+                code: TextStyle(
+                  backgroundColor: isDark ? Colors.black26 : Colors.white54,
+                  color: textColor,
+                  fontFamily: 'monospace',
+                  fontSize: 14,
+                ),
+                codeblockDecoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.black26
+                      : Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                blockquote: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  fontStyle: FontStyle.italic,
+                ),
+                blockquoteDecoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: isDark ? Colors.white30 : Colors.black26,
+                      width: 4,
+                    ),
+                  ),
+                ),
               ),
             );
           },

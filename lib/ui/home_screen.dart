@@ -220,7 +220,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                FloatingActionButton.large(
+                FloatingActionButton(
                   heroTag: 'chat_btn',
                   onPressed: () {
                     Navigator.of(context).push(
@@ -229,7 +229,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                   backgroundColor: isDark ? Colors.white : Colors.black,
                   foregroundColor: isDark ? Colors.black : Colors.white,
-                  child: const Icon(Icons.auto_awesome),
+                  child: const Icon(Icons.try_sms_star),
                 ),
                 FloatingActionButton.large(
                   heroTag: 'add_btn',
