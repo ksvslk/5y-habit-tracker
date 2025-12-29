@@ -14,7 +14,7 @@ class AddHabitScreen extends ConsumerStatefulWidget {
 
 class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   String name = '';
-  String selectedTheme = 'scholar';
+  String selectedTheme = 'athlete';
 
   // 1. We can leave this as green or any color,
   // because it will be overwritten instantly in initState.
@@ -28,7 +28,8 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   late FocusNode _iconFocusNode;
 
   // --- ICON LIBRARY ---
-  final List<IconData> _availableIcons = [
+final List<IconData> _availableIcons = [
+    // Originals
     Icons.emoji_events,
     Icons.star,
     Icons.flag,
@@ -53,6 +54,30 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     Icons.palette,
     Icons.local_florist,
     Icons.self_improvement,
+
+    // New Additions
+    Icons.hiking,                 // Outdoors/Hiking
+    Icons.pool,                   // Swimming
+    Icons.pedal_bike,             // Cycling
+    Icons.sports_soccer,          // Team sports
+    Icons.spa,                    // Relaxation/Massage
+    Icons.school,                 // Study/Class
+    Icons.language,               // Language learning
+    Icons.edit,                   // Journaling/Writing
+    Icons.monitor,                // Computer work/Screen time
+    Icons.attach_money,           // Finance/Budget
+    Icons.savings,                // Saving money
+    Icons.shopping_cart,          // Groceries
+    Icons.cleaning_services,      // Chores/Cleaning
+    Icons.local_laundry_service,  // Laundry
+    Icons.pets,                   // Pet care
+    Icons.kitchen,                // Cooking
+    Icons.coffee,                 // Caffeine control or morning coffee
+    Icons.celebration,            // Social events
+    Icons.photo_camera,           // Photography/Hobbies
+    Icons.videogame_asset,        // Gaming
+    Icons.smoke_free,             // Quitting smoking
+    Icons.do_not_disturb,         // Digital detox/Focus mode
   ];
 
   @override
