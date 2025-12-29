@@ -1,22 +1,18 @@
 import 'dart:io';
-import 'dart:math'; 
+import 'dart:math';
 import 'package:fiveyear/data/habit_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/habit_schema.dart';
-import '../../data/theme_colors.dart'; 
-import '../screens/calendar_screen.dart'; 
+import '../../data/theme_colors.dart';
+import '../screens/calendar_screen.dart';
 import 'mosaic_painter.dart';
 
 class HabitCard extends ConsumerStatefulWidget {
   final Habit habit;
-  final int sourceWidth; 
+  final int sourceWidth;
 
-  const HabitCard({
-    super.key, 
-    required this.habit,
-    this.sourceWidth = 1024,
-  });
+  const HabitCard({super.key, required this.habit, this.sourceWidth = 1024});
 
   @override
   ConsumerState<HabitCard> createState() => _HabitCardState();
@@ -51,7 +47,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
       final themeName = widget.habit.theme;
       if (themeData.containsKey(themeName)) {
         final colors = themeData[themeName]['colors'] as List<Color>;
-        return colors[assetIndex - 1]; 
+        return colors[assetIndex - 1];
       }
     } catch (e) {
       // Fallthrough
@@ -87,24 +83,25 @@ class _HabitCardState extends ConsumerState<HabitCard> {
     final screenWidth = MediaQuery.of(context).size.width;
     final pixelRatio = MediaQuery.of(context).devicePixelRatio;
     int targetCacheWidth = (screenWidth * pixelRatio).round();
-    if (targetCacheWidth > widget.sourceWidth) targetCacheWidth = widget.sourceWidth;
+    if (targetCacheWidth > widget.sourceWidth)
+      targetCacheWidth = widget.sourceWidth;
 
-    const double borderRadius = 12.0; 
-    const double borderStroke = 0.5; 
+    const double borderRadius = 12.0;
+    const double borderStroke = 0.5;
 
     return GestureDetector(
       onTap: () async {
         final List<String>? result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => CalendarScreen(
-              habit: widget.habit,
-              initialYear: _displayYear, 
-            ),
+            builder: (_) =>
+                CalendarScreen(habit: widget.habit, initialYear: _displayYear),
           ),
         );
         if (result != null) {
-          ref.read(habitRepositoryProvider).updateHabitDays(widget.habit.id, result);
+          ref
+              .read(habitRepositoryProvider)
+              .updateHabitDays(widget.habit.id, result);
         }
       },
       child: AnimatedBuilder(
@@ -112,10 +109,10 @@ class _HabitCardState extends ConsumerState<HabitCard> {
         builder: (context, child) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           var currentColor = _getSmoothColor();
-          
+
           Color baseTone;
           Color textColor;
-          Color uiColor;     
+          Color uiColor;
           Color gridFill;
           Color gridBorder;
 
@@ -123,31 +120,33 @@ class _HabitCardState extends ConsumerState<HabitCard> {
           var hsl = HSLColor.fromColor(currentColor);
 
           if (isDark) {
-            // --- DARK MODE CONFIG ---
-            baseTone = const Color(0xFF1E1E1E); 
+            baseTone = Color.alphaBlend(
+              currentColor.withOpacity(0.15),
+              Colors.black,
+            );
             textColor = Colors.white;
-
-            // Ensure bright accent for text/borders
-            Color brightAccent = hsl.withLightness(max(hsl.lightness, 0.7)).toColor();
-            uiColor = brightAccent;
-
-            // Stealth Grid
-            gridFill = currentColor;
-            gridBorder = baseTone;
-
+            uiColor = hsl.withLightness(max(hsl.lightness, 0.7)).toColor();
+            gridFill = const Color(0xFF121212);
+            gridBorder = HSLColor.fromColor(baseTone).withLightness(0.2).toColor();
           } else {
             // --- LIGHT MODE CONFIG ---
-            baseTone = Color.alphaBlend(currentColor.withOpacity(0.15), Colors.white);
+            baseTone = Color.alphaBlend(
+              currentColor.withOpacity(0.15),
+              Colors.white,
+            );
             textColor = Colors.black;
             uiColor = hsl.withLightness(min(hsl.lightness, 0.3)).toColor();
 
             gridFill = currentColor;
-            gridBorder = _getCrispBorder(currentColor); 
+            gridBorder = _getCrispBorder(currentColor);
           }
 
           // --- RESOLVE ICON DATA ---
-          IconData habitIcon = widget.habit.iconCodePoint != null 
-              ? IconData(widget.habit.iconCodePoint!, fontFamily: 'MaterialIcons') 
+          IconData habitIcon = widget.habit.iconCodePoint != null
+              ? IconData(
+                  widget.habit.iconCodePoint!,
+                  fontFamily: 'MaterialIcons',
+                )
               : Icons.emoji_events;
 
           // --- CONTRAST CALCULATIONS FOR ICON ---
@@ -156,29 +155,33 @@ class _HabitCardState extends ConsumerState<HabitCard> {
 
           if (isDark) {
             // Dark Mode: Glassy background, Neon Icon
-            iconBg = currentColor.withOpacity(0.2); 
-            iconFg = uiColor; 
+            iconBg = currentColor.withOpacity(0.2);
+            iconFg = uiColor;
           } else {
             // Light Mode: Solid background, Black/White Icon based on luminance
             iconBg = currentColor;
-            // Calculate luminance: 0.0 (dark) to 1.0 (light). 
+            // Calculate luminance: 0.0 (dark) to 1.0 (light).
             // If background is light (>0.5), use Black icon. Otherwise White.
-            iconFg = iconBg.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+            iconFg = iconBg.computeLuminance() > 0.5
+                ? Colors.black87
+                : Colors.white;
           }
 
           return Container(
             decoration: BoxDecoration(
-              color: baseTone, 
+              color: baseTone,
               borderRadius: BorderRadius.circular(20),
-              border: isDark 
+              border: isDark
                   ? Border.all(color: uiColor.withOpacity(0.3), width: 1)
                   : null,
               boxShadow: [
                 BoxShadow(
-                  color: isDark ? Colors.black.withOpacity(0.5) : currentColor.withOpacity(0.08), 
-                  blurRadius: 12, 
-                  offset: const Offset(0, 6)
-                )
+                  color: isDark
+                      ? Colors.black.withOpacity(0.5)
+                      : currentColor.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
               ],
             ),
             padding: const EdgeInsets.all(20),
@@ -188,21 +191,27 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                 Row(
                   children: [
                     Container(
-                      width: 36, height: 36,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: iconBg, 
+                        color: iconBg,
                         shape: BoxShape.circle,
                         // In dark mode, add a thin border to define the circle against the dark card
-                        border: isDark ? Border.all(color: uiColor.withOpacity(0.5), width: 1) : null
+                        border: isDark
+                            ? Border.all(
+                                color: uiColor.withOpacity(0.5),
+                                width: 1,
+                              )
+                            : null,
                       ),
-                      child: Icon(habitIcon, color: iconFg, size: 20)
+                      child: Icon(habitIcon, color: iconFg, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        widget.habit.name, 
+                        widget.habit.name,
                         style: TextStyle(
-                          fontSize: 18, 
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
                           color: textColor,
@@ -213,16 +222,16 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                     Text(
                       _displayYear.toString(),
                       style: TextStyle(
-                        color: uiColor, 
+                        color: uiColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 AspectRatio(
                   aspectRatio: 20 / 19,
                   child: Stack(
@@ -232,7 +241,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                         borderRadius: BorderRadius.circular(borderRadius),
                         child: PageView.builder(
                           controller: _yearController,
-                          itemCount: _historyLength + 1, 
+                          itemCount: _historyLength + 1,
                           onPageChanged: (index) {
                             final yearsInPast = _historyLength - index;
                             final newYear = _anchorYear - yearsInPast;
@@ -251,29 +260,32 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                               children: [
                                 widget.habit.customImagePath != null
                                     ? Image.file(
-                                        File(widget.habit.customImagePath!), 
-                                        fit: BoxFit.cover, 
-                                        cacheWidth: targetCacheWidth, 
-                                      )
-                                    : Image.asset(
-                                        'assets/habits/${widget.habit.theme}/$assetIndex.jpg', 
+                                        File(widget.habit.customImagePath!),
                                         fit: BoxFit.cover,
                                         cacheWidth: targetCacheWidth,
-                                        frameBuilder: (context, child, frame, wasSync) {
-                                          if (wasSync) return child;
-                                          return AnimatedOpacity(
-                                            opacity: frame == null ? 0 : 1,
-                                            duration: const Duration(milliseconds: 300),
-                                            curve: Curves.easeOut,
-                                            child: child,
-                                          );
-                                        },
+                                      )
+                                    : Image.asset(
+                                        'assets/habits/${widget.habit.theme}/$assetIndex.jpg',
+                                        fit: BoxFit.cover,
+                                        cacheWidth: targetCacheWidth,
+                                        frameBuilder:
+                                            (context, child, frame, wasSync) {
+                                              if (wasSync) return child;
+                                              return AnimatedOpacity(
+                                                opacity: frame == null ? 0 : 1,
+                                                duration: const Duration(
+                                                  milliseconds: 300,
+                                                ),
+                                                curve: Curves.easeOut,
+                                                child: child,
+                                              );
+                                            },
                                       ),
                                 CustomPaint(
                                   painter: MosaicPainter(
                                     completedDays: widget.habit.completedDays,
                                     year: year,
-                                    fillColor: gridFill, 
+                                    fillColor: gridFill,
                                     borderColor: gridBorder,
                                   ),
                                   size: Size.infinite,
@@ -288,7 +300,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(borderRadius),
                             border: Border.all(
-                              color: uiColor, 
+                              color: uiColor,
                               width: borderStroke,
                             ),
                           ),
