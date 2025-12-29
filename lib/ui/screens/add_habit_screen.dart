@@ -15,11 +15,11 @@ class AddHabitScreen extends ConsumerStatefulWidget {
 class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   String name = '';
   String selectedTheme = 'scholar';
-  
-  // 1. We can leave this as green or any color, 
+
+  // 1. We can leave this as green or any color,
   // because it will be overwritten instantly in initState.
-  Color backendColor = Colors.green; 
-  
+  Color backendColor = Colors.green;
+
   IconData selectedIcon = Icons.emoji_events;
 
   // --- STATE FOR "1-2-3" FLOW ---
@@ -29,12 +29,30 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
 
   // --- ICON LIBRARY ---
   final List<IconData> _availableIcons = [
-    Icons.emoji_events, Icons.star, Icons.flag, Icons.check_circle,
-    Icons.timeline, Icons.lightbulb, Icons.bolt, Icons.local_fire_department,
-    Icons.access_alarm, Icons.timer, Icons.schedule, Icons.today,
-    Icons.fitness_center, Icons.book, Icons.water_drop, Icons.directions_run,
-    Icons.bed, Icons.restaurant, Icons.work, Icons.code, Icons.music_note,
-    Icons.palette, Icons.local_florist, Icons.self_improvement,
+    Icons.emoji_events,
+    Icons.star,
+    Icons.flag,
+    Icons.check_circle,
+    Icons.timeline,
+    Icons.lightbulb,
+    Icons.bolt,
+    Icons.local_fire_department,
+    Icons.access_alarm,
+    Icons.timer,
+    Icons.schedule,
+    Icons.today,
+    Icons.fitness_center,
+    Icons.book,
+    Icons.water_drop,
+    Icons.directions_run,
+    Icons.bed,
+    Icons.restaurant,
+    Icons.work,
+    Icons.code,
+    Icons.music_note,
+    Icons.palette,
+    Icons.local_florist,
+    Icons.self_improvement,
   ];
 
   @override
@@ -113,7 +131,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   }) {
     final isActive = (_activeStep == stepNumber);
     final borderColor = isActive ? activeColor : Colors.transparent;
-    final cardColor = isDark ? Colors.grey[900]!.withOpacity(0.5) : Colors.white;
+    final cardColor = isDark
+        ? Colors.grey[900]!.withOpacity(0.5)
+        : Colors.white;
 
     return GestureDetector(
       onTap: onTap,
@@ -121,15 +141,15 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
         duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.only(bottom: 24),
         padding: const EdgeInsets.all(16),
-decoration: BoxDecoration(
-  color: cardColor,
-  borderRadius: BorderRadius.circular(16),
-  border: Border.all(color: borderColor, width: 2),
-  
-  // CHANGED: Removed the isActive check that added a colored shadow.
-  // We force an empty list so no background glow appears.
-  boxShadow: [], 
-),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 2),
+
+          // CHANGED: Removed the isActive check that added a colored shadow.
+          // We force an empty list so no background glow appears.
+          boxShadow: [],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -164,8 +184,10 @@ decoration: BoxDecoration(
       child: Scaffold(
         backgroundColor: surfaceColor,
         appBar: AppBar(
-          title: Text("New Habit",
-              style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+          title: Text(
+            "New Habit",
+            style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+          ),
           backgroundColor: surfaceColor,
           elevation: 0,
           leading: IconButton(
@@ -174,12 +196,16 @@ decoration: BoxDecoration(
           ),
           actions: [
             TextButton(
-                onPressed: name.isNotEmpty ? _createHabit : null,
-                child: Text("Create",
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: activeColor)))
+              onPressed: name.isNotEmpty ? _createHabit : null,
+              child: Text(
+                "Create",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: activeColor,
+                ),
+              ),
+            ),
           ],
         ),
         body: SafeArea(
@@ -206,7 +232,8 @@ decoration: BoxDecoration(
                     decoration: InputDecoration(
                       hintText: "e.g. Read 10 pages",
                       hintStyle: TextStyle(
-                          color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                        color: isDark ? Colors.grey[600] : Colors.grey[400],
+                      ),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
@@ -240,7 +267,7 @@ decoration: BoxDecoration(
                       itemBuilder: (context, index) {
                         final icon = _availableIcons[index];
                         final isSelected = (icon == selectedIcon);
-                        
+
                         return GestureDetector(
                           onTap: () {
                             FocusScope.of(context).unfocus();
@@ -257,8 +284,8 @@ decoration: BoxDecoration(
                               color: isSelected
                                   ? activeColor.withOpacity(0.2)
                                   : (isDark
-                                      ? Colors.grey[800]
-                                      : Colors.grey[100]),
+                                        ? Colors.grey[800]
+                                        : Colors.grey[100]),
                               shape: BoxShape.circle,
                               border: isSelected
                                   ? Border.all(color: activeColor, width: 2)
@@ -270,8 +297,8 @@ decoration: BoxDecoration(
                               color: isSelected
                                   ? activeColor
                                   : (isDark
-                                      ? Colors.grey[400]
-                                      : Colors.grey[500]),
+                                        ? Colors.grey[400]
+                                        : Colors.grey[500]),
                             ),
                           ),
                         );
@@ -290,9 +317,10 @@ decoration: BoxDecoration(
                     FocusScope.of(context).unfocus();
                     setState(() => _activeStep = 3);
                   },
-                  child: LayoutBuilder(builder: (context, constraints) {
-                    final buttonWidth = (constraints.maxWidth - 12) / 2;
-                    return Wrap(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final buttonWidth = (constraints.maxWidth - 12) / 2;
+                      return Wrap(
                         spacing: 12,
                         runSpacing: 12,
                         children: themeData.entries.map((e) {
@@ -305,43 +333,56 @@ decoration: BoxDecoration(
                           final inactiveBg = isDark
                               ? Colors.grey[800]!
                               : const Color(0xFFF4F4F5);
-                          final inactiveText =
-                              isDark ? Colors.grey[400] : Colors.black87;
+                          final inactiveText = isDark
+                              ? Colors.grey[400]
+                              : Colors.black87;
 
                           return GestureDetector(
-                              onTap: () {
-                                FocusScope.of(context).unfocus();
-                                setState(() {
-                                  _activeStep = 3;
-                                  selectedTheme = key;
-                                  _updateSelectedColor();
-                                });
-                              },
-                              child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  width: buttonWidth,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 12),
-                                  decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? contrastColor.withOpacity(0.2)
-                                          : inactiveBg,
-                                      border: Border.all(
-                                          color: isSelected
-                                              ? contrastColor
-                                              : Colors.transparent,
-                                          width: 2),
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: Center(
-                                      child: Text(data['name'],
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                              color: isSelected
-                                                  ? contrastColor
-                                                  : inactiveText)))));
-                        }).toList());
-                  }),
+                            onTap: () {
+                              FocusScope.of(context).unfocus();
+                              setState(() {
+                                _activeStep = 3;
+                                selectedTheme = key;
+                                _updateSelectedColor();
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: buttonWidth,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? contrastColor.withOpacity(0.2)
+                                    : inactiveBg,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? contrastColor
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  data['name'],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: isSelected
+                                        ? contrastColor
+                                        : inactiveText,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

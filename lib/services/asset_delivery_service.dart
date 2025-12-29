@@ -10,7 +10,7 @@ class AssetDeliveryService {
     try {
       if (Platform.isAndroid || Platform.isIOS) {
         final String? path = await methodChannel.invokeMethod(
-          'getAssetPackPathIfExists',  // New method name
+          'getAssetPackPathIfExists',
           {'packName': packName}
         );
         return path;

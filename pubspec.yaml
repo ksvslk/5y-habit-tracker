@@ -105,13 +105,18 @@ flutter:
 
   # Define where your default images live
   assets:
-    - assets/habits/scholar/
-    - assets/habits/warrior/
-    - assets/habits/morning/
     - assets/habits/athlete/
-    - assets/habits/creator/
-    - assets/habits/nurturer/
-    - assets/habits/smoker/
+    - assets/habits/chaos/
+    - assets/habits/connection/
+    - assets/habits/fixation/
+    - assets/habits/malice/
+    - assets/habits/mastery/
+    - assets/habits/nature/
+    - assets/habits/ritual/
+    - assets/habits/serenity/
+    - assets/habits/turmoil/
+    - assets/habits/vice/
+    - assets/habits/vitality/
     - assets/icons/
 
 
