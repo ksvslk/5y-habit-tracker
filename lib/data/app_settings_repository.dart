@@ -52,8 +52,11 @@ class AppSettingsRepository {
     }
   }
 
-// ADD THIS NEW METHOD
-  Future<void> finalizeOnboarding(bool enableNotifications, DateTime? time) async {
+  // ADD THIS NEW METHOD
+  Future<void> finalizeOnboarding(
+    bool enableNotifications,
+    DateTime? time,
+  ) async {
     final isar = await db;
     final settings = await getSettings();
 
@@ -71,9 +74,46 @@ class AppSettingsRepository {
 
     // 4. Handle the notification scheduling
     if (enableNotifications && time != null) {
-      await notificationService.scheduleDailyNotification(time.hour, time.minute);
+      await notificationService.scheduleDailyNotification(
+        time.hour,
+        time.minute,
+      );
     } else {
       await notificationService.cancelDailyNotifications();
     }
   }
+
+Future<void> setModelLicenseAccepted(bool accepted) async {
+  final database = await db;
+  
+  print("=== START setModelLicenseAccepted ===");
+  print("Setting license to: $accepted");
+  
+  await database.writeTxn(() async {
+    final settings = await database.appSettings.where().findFirst();
+    
+    if (settings == null) {
+      print("ERROR: No settings found in database!");
+      return;
+    }
+    
+    print("Found settings with ID: ${settings.id}");
+    print("Current value BEFORE: ${settings.isModelLicenseAccepted}");
+    
+    settings.isModelLicenseAccepted = accepted;
+    
+    print("Value AFTER assignment: ${settings.isModelLicenseAccepted}");
+    
+    final putResult = await database.appSettings.put(settings);
+    print("Put returned ID: $putResult");
+  });
+  
+  print("Transaction complete, now verifying...");
+  
+  // Verify it saved
+  final verify = await database.appSettings.where().findFirst();
+  print("VERIFIED from DB: isModelLicenseAccepted = ${verify?.isModelLicenseAccepted}");
+  print("VERIFIED ID: ${verify?.id}");
+  print("=== END setModelLicenseAccepted ===");
+}
 }

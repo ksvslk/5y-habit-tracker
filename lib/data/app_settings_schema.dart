@@ -8,4 +8,5 @@ class AppSettings {
   DateTime? dailyReminderTime;
   bool isReminderEnabled = false;
   bool isFirstLaunch = true;
+  bool isModelLicenseAccepted = false;
 }

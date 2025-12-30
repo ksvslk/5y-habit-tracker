@@ -45,11 +45,11 @@ class ChatState {
     this.isDownloading = false,
     this.downloadProgress = 0.0,
     this.isThinking = false,
-    this.isCheckingForModel = false,
+    this.isCheckingForModel = true,
     this.needsDownload = false,
     this.isStopping = false,
     this.usedTokens = 0,
-    this.maxTokens = 1024,
+    this.maxTokens = 2048,
     this.error,
   });
 
@@ -373,7 +373,7 @@ class ChatController extends StateNotifier<ChatState> {
       state = ChatState(
         messages: [],
         usedTokens: 0,
-        maxTokens: 1024,
+        maxTokens: 2048,
         isLoadingEngine: false,
         isThinking: false,
         isStopping: false,

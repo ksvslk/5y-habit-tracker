@@ -1,35 +1,58 @@
+import 'dart:io';
+
 import 'package:fiveyear/services/notification_service.dart';
 import 'package:fiveyear/ui/screens/daily_checkin_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gemma/core/api/flutter_gemma.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'ui/home_screen.dart';
+
+Future<void> initializeRevenueCat() async {
+  // Platform-specific API keys
+  String apiKey;
+  if (Platform.isIOS) {
+    apiKey = 'test_ZPmEYLxdeAFGnZRnBCERJScPvDn';
+  } else if (Platform.isAndroid) {
+    apiKey = 'test_ZPmEYLxdeAFGnZRnBCERJScPvDn';
+  } else {
+    throw UnsupportedError('Platform not supported');
+  }
+
+  await Purchases.configure(PurchasesConfiguration(apiKey));
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-   // Initialize Notifications
+  // Initialize Notifications and capture payload if launched from notification
   final container = ProviderContainer();
-  await container.read(notificationServiceProvider).init();
+  final String? initialPayload = await container
+      .read(notificationServiceProvider)
+      .init();
 
   // Initialize Gemma
   await FlutterGemma.initialize();
-  
+
   // 1. Enable Edge-to-Edge (Android 10+)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    systemNavigationBarColor: Colors.transparent,
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent,
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
 
-  // 2. Wrap app in ProviderScope
-  runApp(const ProviderScope(child: MyApp()));
+  // 2. Wrap app in ProviderScope and pass the payload
+  runApp(ProviderScope(child: MyApp(initialPayload: initialPayload)));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String? initialPayload;
+
+  const MyApp({super.key, this.initialPayload});
 
   @override
   Widget build(BuildContext context) {
@@ -40,30 +63,46 @@ class MyApp extends StatelessWidget {
 
       // 1. LIGHT THEME
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.white, brightness: Brightness.light),
+        // REC: Use BlueGrey or a specific brand color instead of White for the seed
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Color.fromARGB(255, 97, 154, 74),
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC), // Light Grey
-        pageTransitionsTheme: const PageTransitionsTheme(builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        }),
+        // Your custom warm off-white is good!
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
       ),
 
-      // 2. DARK THEME (New)
+      // 2. DARK THEME
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.black, brightness: Brightness.dark),
+        // REC: Use the same seed as light mode so the brand identity matches
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Color.fromARGB(255, 97, 154, 74),
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF121212), // Dark Grey/Black
-        pageTransitionsTheme: const PageTransitionsTheme(builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        }),
+        // REC: Use #121212 for better shadow visibility and less eye strain
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
       ),
 
       // 3. AUTO-DETECT
-      themeMode: ThemeMode.system, 
-      
-      initialRoute: '/', 
+      themeMode: ThemeMode.system,
+
+      // If payload is present, start there; otherwise start at home
+      initialRoute: initialPayload == 'daily_check_in'
+          ? '/daily_check_in'
+          : '/',
+
       routes: {
         '/': (context) => const HomeScreen(),
         '/daily_check_in': (context) => const DailyCheckInScreen(),

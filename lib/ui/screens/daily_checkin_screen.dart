@@ -94,12 +94,13 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
   @override
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(habitsProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: colorScheme.surface,
       body: habitsAsync.when(
         data: (habits) {
-          if (habits.isEmpty) return const Center(child: Text("No habits found"));
+          if (habits.isEmpty) return Center(child: Text("No habits found", style: TextStyle(color: colorScheme.onSurface)));
 
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
@@ -115,6 +116,8 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
   }
 
   Widget _buildQuestionFlow(List<Habit> habits) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SafeArea(
       key: const ValueKey('questions'),
       child: Column(
@@ -125,14 +128,13 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close, color: colorScheme.onSurface),
                   onPressed: () => Navigator.pop(context),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark 
-                        ? Colors.grey[800] : Colors.grey[200],
+                    color: colorScheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: AnimatedSwitcher(
@@ -140,7 +142,11 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
                     child: Text(
                       "${_currentIndex + 1} / ${habits.length}",
                       key: ValueKey(_currentIndex),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant
+                      ),
                     ),
                   ),
                 ),
@@ -169,7 +175,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
   }
 
   Widget _buildSummaryView() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     final total = _completedSessionHabits.length + _skippedSessionHabits.length;
     final percent = total == 0 ? 0 : (_completedSessionHabits.length / total * 100).toInt();
 
@@ -181,9 +187,9 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 40),
-            Text("All Done!", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black)),
+            Text("All Done!", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: colorScheme.onSurface)),
             const SizedBox(height: 8),
-            Text("You completed $percent% of your habits.", style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+            Text("You completed $percent% of your habits.", style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant)),
             const SizedBox(height: 32),
             if (_completedSessionHabits.isNotEmpty) ...[
               Text("COMPLETED", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.green[400], letterSpacing: 1.2)),
@@ -201,8 +207,8 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
               width: double.infinity, height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? Colors.white : Colors.black,
-                  foregroundColor: isDark ? Colors.black : Colors.white,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -217,16 +223,18 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
   }
 
   Widget _buildCompletedCard(Habit habit) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = _getHabitColor(habit); 
     
-    final bgColor = isDark ? color.withOpacity(0.15) : color.withOpacity(0.25);
+    // FIX: Make the background SOLID by blending the tint with the surface color.
+    final tintOpacity = isDark ? 0.15 : 0.25;
+    final bgColor = Color.alphaBlend(color.withOpacity(tintOpacity), colorScheme.surface);
+    
     final borderColor = isDark ? color.withOpacity(0.4) : color.withOpacity(0.6);
     
-    // Icon Color: Always Black (rather black) for consistency
-    const iconColor = Colors.black87;
-    
-    final darkToneColor = Color.lerp(color, Colors.black, 0.6)!;
+    // Determine text color based on background luminance for readability
+    final textColor = bgColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
 
     return Container(
       decoration: BoxDecoration(
@@ -244,7 +252,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
               color: color, 
               shape: BoxShape.circle
             ), 
-            child: const Icon(Icons.check, color: iconColor, size: 20)
+            child: const Icon(Icons.check, color: Colors.black87, size: 20)
           ),
           const SizedBox(height: 12),
           Text(
@@ -255,8 +263,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
             style: TextStyle(
               fontSize: 16, 
               fontWeight: FontWeight.bold, 
-              // Text Color: Dark Mode = White, Light Mode = Dark Tone
-              color: isDark ? Colors.white.withOpacity(0.9) : darkToneColor
+              color: textColor
             )
           ),
         ],
@@ -292,7 +299,7 @@ class HabitCheckCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -301,14 +308,14 @@ class HabitCheckCard extends StatelessWidget {
         children: [
           const Spacer(flex: 2),
           Text("Did you complete",
-              style: TextStyle(fontSize: 20, color: isDark ? Colors.white54 : Colors.black54, letterSpacing: -0.5)),
+              style: TextStyle(fontSize: 20, color: colorScheme.onSurfaceVariant, letterSpacing: -0.5)),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(
               habit.name,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 36, height: 1.1, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black, letterSpacing: -1.0),
+              style: TextStyle(fontSize: 36, height: 1.1, fontWeight: FontWeight.w800, color: colorScheme.onSurface, letterSpacing: -1.0),
             ),
           ),
           const Spacer(flex: 3),
@@ -321,7 +328,7 @@ class HabitCheckCard extends StatelessWidget {
           const Spacer(flex: 1),
           TextButton(
             onPressed: onNo,
-            style: TextButton.styleFrom(foregroundColor: isDark ? Colors.white38 : Colors.black38),
+            style: TextButton.styleFrom(foregroundColor: colorScheme.onSurfaceVariant),
             child: const Text("Skip for now", style: TextStyle(fontSize: 16)),
           ),
           const Spacer(flex: 2),
@@ -331,9 +338,6 @@ class HabitCheckCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// ANIMATED CHECK BUTTON
-// -----------------------------------------------------------------------------
 class AnimatedCheckButton extends StatefulWidget {
   final Color color;
   final VoidCallback onTap;
@@ -388,23 +392,24 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     // --- COLORS ---
     final idleOpacity = isDark ? 0.05 : 0.2; 
     final activeOpacity = isDark ? 0.25 : 0.4; 
-    final bgColor = widget.color.withOpacity(_isPressed ? activeOpacity : idleOpacity);
+    
+    // FIX: Make button background solid
+    final bgColor = Color.alphaBlend(
+      widget.color.withOpacity(_isPressed ? activeOpacity : idleOpacity), 
+      colorScheme.surface
+    );
     
     final borderOpacity = isDark ? 0.3 : 0.5;
     final borderColor = _isPressed ? widget.color : widget.color.withOpacity(borderOpacity);
     
-    // Dark Tone for Text
-    final darkToneColor = Color.lerp(widget.color, Colors.black, 0.6)!;
-    final textStyleColor = isDark ? widget.color : darkToneColor;
-
-    // --- CHECKMARK COLOR LOGIC ---
-    // ALWAYS Black87 regardless of mode
-    const checkMarkColor = Colors.black87;
+    // Contrast check for "YES" text
+    final textStyleColor = bgColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
 
     return GestureDetector(
       onTap: _handleTap,
@@ -445,9 +450,10 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isDark ? Colors.grey[850] : Colors.white,
+                    // Use solid surface colors
+                    color: colorScheme.surfaceContainerHigh,
                     border: Border.all(
-                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                      color: colorScheme.outlineVariant,
                       width: 4,
                     ),
                   ),
@@ -479,8 +485,7 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
                   size: const Size(100, 100),
                   painter: CheckmarkPainter(
                     progress: _checkAnimation,
-                    // ALWAYS use Black
-                    color: checkMarkColor, 
+                    color: Colors.black87, 
                   ),
                 ),
               ],

@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:dist="http://schemas.android.com/apk/distribution"
-    package="com.example.fiveyear.gemma3_1b_it"> <dist:module dist:instant="false" dist:title="Gemma Model">
+    package="com.indest.fiveyearhabittracker.gemma3_1b_it"> <dist:module dist:instant="false" dist:title="Gemma Model">
         <dist:delivery>
             <dist:on-demand />
         </dist:delivery>

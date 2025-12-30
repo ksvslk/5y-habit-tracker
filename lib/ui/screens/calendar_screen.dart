@@ -839,8 +839,8 @@ class _StatsViewState extends State<_StatsView> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dotInactiveColor = isDark ? Colors.grey[800] : Colors.grey[300];
+    final colorScheme = Theme.of(context).colorScheme;
+    final dotInactiveColor = colorScheme.surfaceContainerHighest;
 
     return Column(
       children: [
@@ -910,16 +910,19 @@ class _StatsViewState extends State<_StatsView> {
   Widget _buildMonthlyTrendCard(HashSet<int> dateSet) {
     final now = DateTime.now();
     final counts = _getMonthCounts(dateSet);
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgOpacity = isDark ? 0.15 : 0.08;
-    final trackColor = isDark ? Colors.grey[800] : Colors.grey[100];
+    // FIX: Make solid
+    final bgColor = Color.alphaBlend(widget.color.withOpacity(bgOpacity), colorScheme.surface);
+    final trackColor = isDark ? Colors.grey[800] : Colors.grey[200];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: widget.color.withOpacity(bgOpacity),
+        color: bgColor,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -933,13 +936,13 @@ class _StatsViewState extends State<_StatsView> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
+                  color: colorScheme.onSurfaceVariant,
                   letterSpacing: 1.0,
                 ),
               ),
               Text(
                 "Last 4 Months",
-                style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -966,7 +969,7 @@ class _StatsViewState extends State<_StatsView> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
-                        color: Colors.grey[600],
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -991,7 +994,7 @@ class _StatsViewState extends State<_StatsView> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: isDark ? Colors.white70 : Colors.black87,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -1018,14 +1021,17 @@ class _StatsViewState extends State<_StatsView> {
     }
     final days = ["M", "T", "W", "T", "F", "S", "S"];
 
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgOpacity = isDark ? 0.15 : 0.08;
+    // FIX: Make solid
+    final bgColor = Color.alphaBlend(widget.color.withOpacity(bgOpacity), colorScheme.surface);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: widget.color.withOpacity(bgOpacity),
+        color: bgColor,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -1036,7 +1042,7 @@ class _StatsViewState extends State<_StatsView> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: colorScheme.onSurfaceVariant,
               letterSpacing: 1.0,
             ),
           ),
@@ -1071,7 +1077,7 @@ class _StatsViewState extends State<_StatsView> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -1092,14 +1098,17 @@ class _StatsViewState extends State<_StatsView> {
     required String val2,
     required IconData icon2,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgOpacity = isDark ? 0.15 : 0.08;
+    // FIX: Make solid
+    final bgColor = Color.alphaBlend(widget.color.withOpacity(bgOpacity), colorScheme.surface);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: widget.color.withOpacity(bgOpacity),
+        color: bgColor,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -1110,20 +1119,20 @@ class _StatsViewState extends State<_StatsView> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: colorScheme.onSurfaceVariant,
               letterSpacing: 1.0,
             ),
           ),
           const Spacer(),
           Row(
             children: [
-              _buildSingleStat(label1, val1, icon1, isDark),
+              _buildSingleStat(label1, val1, icon1),
               Container(
                 width: 1,
                 height: 40,
-                color: Colors.grey[isDark ? 700 : 300],
+                color: colorScheme.outlineVariant,
               ),
-              _buildSingleStat(label2, val2, icon2, isDark),
+              _buildSingleStat(label2, val2, icon2),
             ],
           ),
         ],
@@ -1131,12 +1140,8 @@ class _StatsViewState extends State<_StatsView> {
     );
   }
 
-  Widget _buildSingleStat(
-    String label,
-    String value,
-    IconData icon,
-    bool isDark,
-  ) {
+  Widget _buildSingleStat(String label, String value, IconData icon) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1148,10 +1153,10 @@ class _StatsViewState extends State<_StatsView> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black,
+              color: colorScheme.onSurface,
             ),
           ),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
         ],
       ),
     );

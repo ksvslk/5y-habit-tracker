@@ -2,6 +2,7 @@ import 'package:fiveyear/data/app_settings_provider.dart';
 import 'package:fiveyear/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -9,9 +10,14 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsAsync = ref.watch(appSettingsProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        title: const Text('Settings'),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+      ),
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
@@ -19,11 +25,11 @@ class SettingsScreen extends ConsumerWidget {
           return ListView(
             children: [
               ListTile(
-                title: const Text(
+                title: Text(
                   'Daily Reminder',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                    color: colorScheme.primary,
                   ),
                 ),
               ),
@@ -31,31 +37,26 @@ class SettingsScreen extends ConsumerWidget {
                 title: const Text('Enable Notifications'),
                 value: settings.isReminderEnabled,
                 onChanged: (bool value) async {
-                  // --- CHANGED LOGIC START ---
                   if (value) {
-                    // 1. Ask Permission
                     final bool granted = await ref
                         .read(notificationServiceProvider)
                         .requestPermissions();
 
-                    // 2. If denied, STOP here. Do not update settings.
                     if (!granted) {
-                      // Optional: Show a snackbar telling them to go to Settings
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             content: Text(
                               'Permission denied. Please enable notifications in system settings.',
+                              style: TextStyle(color: colorScheme.onError),
                             ),
+                            backgroundColor: colorScheme.error,
                           ),
                         );
                       }
                       return;
                     }
                   }
-                  // --- CHANGED LOGIC END ---
-
-                  // 3. Only update if permission granted (or if turning OFF)
                   ref
                       .read(appSettingsRepositoryProvider)
                       .updateDailyReminder(value, settings.dailyReminderTime);
@@ -91,16 +92,60 @@ class SettingsScreen extends ConsumerWidget {
                     }
                   },
                 ),
+              
               const Divider(),
+
               ListTile(
-                title: const Text(
-                  'Appearance',
+                title: Text(
+                  'About',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                    color: colorScheme.primary,
                   ),
                 ),
               ),
+              ListTile(
+                leading: const Icon(Icons.description),
+                title: const Text('Licenses'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  showLicensePage(
+                    context: context,
+                    applicationName: '5Y Habit Tracker',
+                  );
+                },
+              ),
+
+              const SizedBox(height: 20),
+              const Divider(),
+
+              FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox();
+
+                  final version = snapshot.data!.version;
+                  final buildNumber = snapshot.data!.buildNumber;
+                  const commitHash = String.fromEnvironment('GIT_HASH', defaultValue: 'Dev');
+
+                  return ListTile(
+                    title: Text(
+                      'v$version ($buildNumber)',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    subtitle: Text(
+                      'Commit: $commitHash',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                            fontFamily: 'monospace',
+                          ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
             ],
           );
         },

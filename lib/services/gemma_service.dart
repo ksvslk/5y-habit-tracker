@@ -121,7 +121,7 @@ class GemmaService {
         print("   3️⃣ Creating fresh chat session...");
         _activeChatSession = await _inferenceModel!.createChat(
           temperature: 0.7,
-          tokenBuffer: 256,
+          tokenBuffer: 1024,
         );
       }
       
@@ -148,7 +148,7 @@ class GemmaService {
     
     try {
       await _activeChatSession!.addQueryChunk(
-        Message.text(text: input, isUser: true)
+        Message.text(text: "You are a support companion. Please answer in 2-3 sentences max.\n\n$input", isUser: true)
       );
       
       final stream = _activeChatSession!.generateChatResponseAsync();

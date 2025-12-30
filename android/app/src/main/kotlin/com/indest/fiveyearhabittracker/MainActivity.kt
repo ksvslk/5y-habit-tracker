@@ -1,4 +1,4 @@
-package com.example.fiveyear // REPLACE WITH YOUR ACTUAL PACKAGE NAME
+package com.indest.fiveyearhabittracker // REPLACE WITH YOUR ACTUAL PACKAGE NAME
 
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity

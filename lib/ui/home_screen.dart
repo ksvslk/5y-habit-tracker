@@ -31,7 +31,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(appSettingsProvider);
     final habitsAsync = ref.watch(habitsProvider);
-    
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = Theme.of(context).colorScheme.surface;
 
@@ -41,6 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         showOnboarding = true;
       }
     });
+
 
     return Stack(
       children: [
@@ -52,36 +53,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverAppBar(
                 floating: true,
                 title: Text(
-                  'Habits',
+                  '5 Year Plan',
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 actions: [
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'settings') {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const SettingsScreen(),
-                          ),
-                        );
-                      }
-                    },
-                    itemBuilder: (BuildContext context) {
-                      return [
-                        const PopupMenuItem<String>(
-                          value: 'settings',
-                          child: Row(
-                            children: [
-                              Icon(Icons.settings, color: Colors.grey),
-                              SizedBox(width: 8),
-                              Text('Settings'),
-                            ],
-                          ),
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    // The color is already handled by the SliverAppBar.iconTheme below,
+                    // so it will automatically switch between black/white based on 'isDark'.
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsScreen(),
                         ),
-                      ];
+                      );
                     },
                   ),
                 ],
@@ -95,37 +83,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 loading: () => SliverPadding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 120),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return const HabitCardShimmer();
-                      },
-                      childCount: 4,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return const HabitCardShimmer();
+                    }, childCount: 4),
                   ),
                 ),
                 error: (err, stack) =>
                     SliverToBoxAdapter(child: Text('Error: $err')),
                 data: (habits) {
                   // Perform scroll if we have a pending scroll
-                  if (_pendingScrollToId != null && !_hasScrolled && habits.isNotEmpty) {
+                  if (_pendingScrollToId != null &&
+                      !_hasScrolled &&
+                      habits.isNotEmpty) {
                     final targetId = _pendingScrollToId!;
                     final index = habits.indexWhere((h) => h.id == targetId);
-                    
+
                     if (index != -1) {
                       // Mark as scrolled immediately to prevent multiple attempts
                       _hasScrolled = true;
-                      
+
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (_scrollController.hasClients && mounted) {
                           // Calculate position
                           // AppBar (~56) + each card height + padding
                           // Adjust this value based on your actual HabitCard height
-                          final cardHeight = 200.0; // Estimate, adjust as needed
+                          final cardHeight =
+                              200.0; // Estimate, adjust as needed
                           final targetPosition = (index * cardHeight).clamp(
                             0.0,
                             _scrollController.position.maxScrollExtent,
                           );
-                          
+
                           _scrollController.animateTo(
                             targetPosition,
                             duration: const Duration(milliseconds: 700),
@@ -133,7 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           );
                         }
                       });
-                      
+
                       // Clear the pending ID after a delay
                       Future.delayed(const Duration(milliseconds: 800), () {
                         if (mounted) {
@@ -159,11 +147,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             children: [
                               Opacity(
                                 opacity: 0.8,
-                                child: Image.asset(
-                                  isDarkMode
-                                      ? 'assets/icons/greyscale_night.png'
-                                      : 'assets/icons/greyscale.png',
+                                // WRAPPER: This SizedBox reserves the pixels immediately
+                                child: SizedBox(
                                   width: 200,
+                                  height:
+                                      200, // <--- CRITICAL: Defines the height before the image exists
+                                  child: Image.asset(
+                                    isDarkMode
+                                        ? 'assets/icons/greyscale_night.png'
+                                        : 'assets/icons/greyscale.png',
+                                    fit: BoxFit
+                                        .contain, // Ensures the image doesn't stretch if it's not perfectly square
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 24),
@@ -213,7 +208,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
           floatingActionButton: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
@@ -227,8 +223,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       MaterialPageRoute(builder: (_) => const ChatScreen()),
                     );
                   },
-                  backgroundColor: isDark ? Colors.white : Colors.black,
-                  foregroundColor: isDark ? Colors.black : Colors.white,
+       backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                  foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
                   child: const Icon(Icons.try_sms_star),
                 ),
                 FloatingActionButton.large(
@@ -237,7 +233,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     final newHabitId = await Navigator.of(context).push<String>(
                       MaterialPageRoute(builder: (_) => const AddHabitScreen()),
                     );
-                    
+
                     if (newHabitId != null && mounted) {
                       setState(() {
                         _pendingScrollToId = newHabitId;
@@ -245,8 +241,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       });
                     }
                   },
-                  backgroundColor: isDark ? Colors.white : Colors.black,
-                  foregroundColor: isDark ? Colors.black : Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
                   child: const Icon(Icons.add),
                 ),
               ],
@@ -257,9 +253,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (showOnboarding)
           Container(
             color: Colors.black54,
-            child: const Center(
-              child: FirstLaunchDialog(),
-            ),
+            child: const Center(child: FirstLaunchDialog()),
           ),
       ],
     );

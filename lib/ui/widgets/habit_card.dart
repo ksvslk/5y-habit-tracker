@@ -166,23 +166,11 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                 ? Colors.black87
                 : Colors.white;
           }
-
           return Container(
             decoration: BoxDecoration(
-              color: baseTone,
+              color: isDark ? currentColor.withAlpha(15):currentColor.withAlpha(50) ,
               borderRadius: BorderRadius.circular(20),
-              border: isDark
-                  ? Border.all(color: uiColor.withOpacity(0.3), width: 1)
-                  : null,
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withOpacity(0.5)
-                      : currentColor.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+        
             ),
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -197,12 +185,6 @@ class _HabitCardState extends ConsumerState<HabitCard> {
                         color: iconBg,
                         shape: BoxShape.circle,
                         // In dark mode, add a thin border to define the circle against the dark card
-                        border: isDark
-                            ? Border.all(
-                                color: uiColor.withOpacity(0.5),
-                                width: 1,
-                              )
-                            : null,
                       ),
                       child: Icon(habitIcon, color: iconFg, size: 20),
                     ),

@@ -27,8 +27,13 @@ const AppSettingsSchema = CollectionSchema(
       name: r'isFirstLaunch',
       type: IsarType.bool,
     ),
-    r'isReminderEnabled': PropertySchema(
+    r'isModelLicenseAccepted': PropertySchema(
       id: 2,
+      name: r'isModelLicenseAccepted',
+      type: IsarType.bool,
+    ),
+    r'isReminderEnabled': PropertySchema(
+      id: 3,
       name: r'isReminderEnabled',
       type: IsarType.bool,
     )
@@ -64,7 +69,8 @@ void _appSettingsSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.dailyReminderTime);
   writer.writeBool(offsets[1], object.isFirstLaunch);
-  writer.writeBool(offsets[2], object.isReminderEnabled);
+  writer.writeBool(offsets[2], object.isModelLicenseAccepted);
+  writer.writeBool(offsets[3], object.isReminderEnabled);
 }
 
 AppSettings _appSettingsDeserialize(
@@ -77,7 +83,8 @@ AppSettings _appSettingsDeserialize(
   object.dailyReminderTime = reader.readDateTimeOrNull(offsets[0]);
   object.id = id;
   object.isFirstLaunch = reader.readBool(offsets[1]);
-  object.isReminderEnabled = reader.readBool(offsets[2]);
+  object.isModelLicenseAccepted = reader.readBool(offsets[2]);
+  object.isReminderEnabled = reader.readBool(offsets[3]);
   return object;
 }
 
@@ -93,6 +100,8 @@ P _appSettingsDeserializeProp<P>(
     case 1:
       return (reader.readBool(offset)) as P;
     case 2:
+      return (reader.readBool(offset)) as P;
+    case 3:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -330,6 +339,16 @@ extension AppSettingsQueryFilter
   }
 
   QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      isModelLicenseAcceptedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isModelLicenseAccepted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
       isReminderEnabledEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -372,6 +391,20 @@ extension AppSettingsQuerySortBy
       sortByIsFirstLaunchDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isFirstLaunch', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+      sortByIsModelLicenseAccepted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isModelLicenseAccepted', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+      sortByIsModelLicenseAcceptedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isModelLicenseAccepted', Sort.desc);
     });
   }
 
@@ -432,6 +465,20 @@ extension AppSettingsQuerySortThenBy
   }
 
   QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+      thenByIsModelLicenseAccepted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isModelLicenseAccepted', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+      thenByIsModelLicenseAcceptedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isModelLicenseAccepted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
       thenByIsReminderEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isReminderEnabled', Sort.asc);
@@ -462,6 +509,13 @@ extension AppSettingsQueryWhereDistinct
   }
 
   QueryBuilder<AppSettings, AppSettings, QDistinct>
+      distinctByIsModelLicenseAccepted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isModelLicenseAccepted');
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QDistinct>
       distinctByIsReminderEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isReminderEnabled');
@@ -487,6 +541,13 @@ extension AppSettingsQueryProperty
   QueryBuilder<AppSettings, bool, QQueryOperations> isFirstLaunchProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isFirstLaunch');
+    });
+  }
+
+  QueryBuilder<AppSettings, bool, QQueryOperations>
+      isModelLicenseAcceptedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isModelLicenseAccepted');
     });
   }
 

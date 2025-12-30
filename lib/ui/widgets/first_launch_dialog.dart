@@ -16,10 +16,11 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // We use AlertDialog widget here, but since it's in a Stack, 
-    // it will just render the box.
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AlertDialog(
       title: const Text('Daily Check-in'),
+      backgroundColor: colorScheme.surfaceContainerHigh, // Solid dialog
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -39,7 +40,7 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).primaryColor),
+                border: Border.all(color: colorScheme.primary),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -56,7 +57,6 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
             title: const Text('Get Notified'),
             value: _enableNotifications,
             onChanged: (val) async {
-              // --- CHANGED: Check Permissions here too ---
               if (val) {
                 final granted = await ref
                     .read(notificationServiceProvider)
@@ -65,11 +65,13 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
                 if (granted) {
                   setState(() => _enableNotifications = true);
                 } else {
-                   // Denied - toggle remains off
                    setState(() => _enableNotifications = false);
                    if (mounted) {
                      ScaffoldMessenger.of(context).showSnackBar(
-                       const SnackBar(content: Text('Notifications permission denied')),
+                       SnackBar(
+                         content: const Text('Notifications permission denied'),
+                         backgroundColor: colorScheme.error,
+                        ),
                      );
                    }
                 }
@@ -101,13 +103,8 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
       _selectedTime.minute,
     );
 
-    // This updates the provider state. 
-    // Because HomeScreen watches this provider, 'isFirstLaunch' becomes false,
-    // causing the Stack to rebuild and remove this overlay instantly.
     await ref
         .read(appSettingsRepositoryProvider)
         .finalizeOnboarding(_enableNotifications, reminderTime);
-        
-    // No need to call Navigator.pop() because we are not in a pushed route anymore.
   }
 }

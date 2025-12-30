@@ -25,7 +25,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  Future<void> init() async {
+  /// Returns the payload (route) if the app was launched by a notification
+  Future<String?> init() async {
     tz.initializeTimeZones();
 
     String timeZoneName;
@@ -61,6 +62,7 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // This handles taps when app is in Foreground or Background (not killed)
         if (response.payload == 'daily_check_in') {
           navigatorKey.currentState?.pushNamed('/daily_check_in');
         }
@@ -68,6 +70,16 @@ class NotificationService {
     );
 
     await _createNotificationChannel();
+
+    // CHECK APP LAUNCH DETAILS (For when app is killed)
+    final NotificationAppLaunchDetails? notificationAppLaunchDetails =
+        await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+
+    if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
+      return notificationAppLaunchDetails?.notificationResponse?.payload;
+    }
+    
+    return null;
   }
 
   Future<void> _createNotificationChannel() async {
@@ -126,14 +138,12 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      // If this line works, keep it. If "AndroidScheduleMode" is also red, remove it too.
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: 'daily_check_in',
     );
   }
 
-  // 2. ADD THIS NEW METHOD: To turn it off
   Future<void> cancelDailyNotifications() async {
     await flutterLocalNotificationsPlugin.cancel(0);
     print('Canceled daily notifications');

@@ -1,4 +1,3 @@
-// lib/ui/widgets/habit_card_shimmer.dart
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -7,18 +6,17 @@ class HabitCardShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Define base/highlight colors based on theme for a subtle effect
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
-
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    // Use surface container for the "card" color
+    // Use surface for the base color
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Shimmer.fromColors(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
+        baseColor: colorScheme.surfaceContainerHighest,
+        highlightColor: colorScheme.surface,
         child: Container(
-          height: 160, // Approximate height of your real HabitCard
+          height: 160, 
           decoration: BoxDecoration(
             color: Colors.black, // Color doesn't matter, masked by Shimmer
             borderRadius: BorderRadius.circular(20),
@@ -28,14 +26,12 @@ class HabitCardShimmer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Mock Title
                 Container(
                   width: 150,
                   height: 20,
                   color: Colors.white,
                 ),
                 const SizedBox(height: 12),
-                // Mock Subtitle / Description
                 Container(
                   width: double.infinity,
                   height: 14,
@@ -48,7 +44,6 @@ class HabitCardShimmer extends StatelessWidget {
                   color: Colors.white,
                 ),
                 const Spacer(),
-                // Mock Action Row (e.g., buttons or progress)
                 Row(
                   children: [
                     Container(width: 40, height: 40, color: Colors.white),
