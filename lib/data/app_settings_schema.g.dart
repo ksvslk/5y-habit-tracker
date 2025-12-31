@@ -22,20 +22,30 @@ const AppSettingsSchema = CollectionSchema(
       name: r'dailyReminderTime',
       type: IsarType.dateTime,
     ),
-    r'isFirstLaunch': PropertySchema(
+    r'dailyTokenUsage': PropertySchema(
       id: 1,
+      name: r'dailyTokenUsage',
+      type: IsarType.long,
+    ),
+    r'isFirstLaunch': PropertySchema(
+      id: 2,
       name: r'isFirstLaunch',
       type: IsarType.bool,
     ),
     r'isModelLicenseAccepted': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'isModelLicenseAccepted',
       type: IsarType.bool,
     ),
     r'isReminderEnabled': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'isReminderEnabled',
       type: IsarType.bool,
+    ),
+    r'lastChatDate': PropertySchema(
+      id: 5,
+      name: r'lastChatDate',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _appSettingsEstimateSize,
@@ -68,9 +78,11 @@ void _appSettingsSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDateTime(offsets[0], object.dailyReminderTime);
-  writer.writeBool(offsets[1], object.isFirstLaunch);
-  writer.writeBool(offsets[2], object.isModelLicenseAccepted);
-  writer.writeBool(offsets[3], object.isReminderEnabled);
+  writer.writeLong(offsets[1], object.dailyTokenUsage);
+  writer.writeBool(offsets[2], object.isFirstLaunch);
+  writer.writeBool(offsets[3], object.isModelLicenseAccepted);
+  writer.writeBool(offsets[4], object.isReminderEnabled);
+  writer.writeDateTime(offsets[5], object.lastChatDate);
 }
 
 AppSettings _appSettingsDeserialize(
@@ -81,10 +93,12 @@ AppSettings _appSettingsDeserialize(
 ) {
   final object = AppSettings();
   object.dailyReminderTime = reader.readDateTimeOrNull(offsets[0]);
+  object.dailyTokenUsage = reader.readLong(offsets[1]);
   object.id = id;
-  object.isFirstLaunch = reader.readBool(offsets[1]);
-  object.isModelLicenseAccepted = reader.readBool(offsets[2]);
-  object.isReminderEnabled = reader.readBool(offsets[3]);
+  object.isFirstLaunch = reader.readBool(offsets[2]);
+  object.isModelLicenseAccepted = reader.readBool(offsets[3]);
+  object.isReminderEnabled = reader.readBool(offsets[4]);
+  object.lastChatDate = reader.readDateTimeOrNull(offsets[5]);
   return object;
 }
 
@@ -98,11 +112,15 @@ P _appSettingsDeserializeProp<P>(
     case 0:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 1:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
       return (reader.readBool(offset)) as P;
+    case 4:
+      return (reader.readBool(offset)) as P;
+    case 5:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -275,6 +293,62 @@ extension AppSettingsQueryFilter
     });
   }
 
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      dailyTokenUsageEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dailyTokenUsage',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      dailyTokenUsageGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'dailyTokenUsage',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      dailyTokenUsageLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'dailyTokenUsage',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      dailyTokenUsageBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'dailyTokenUsage',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -357,6 +431,80 @@ extension AppSettingsQueryFilter
       ));
     });
   }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      lastChatDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastChatDate',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      lastChatDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastChatDate',
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      lastChatDateEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastChatDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      lastChatDateGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastChatDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      lastChatDateLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastChatDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+      lastChatDateBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastChatDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension AppSettingsQueryObject
@@ -378,6 +526,19 @@ extension AppSettingsQuerySortBy
       sortByDailyReminderTimeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dailyReminderTime', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy> sortByDailyTokenUsage() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dailyTokenUsage', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+      sortByDailyTokenUsageDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dailyTokenUsage', Sort.desc);
     });
   }
 
@@ -421,6 +582,19 @@ extension AppSettingsQuerySortBy
       return query.addSortBy(r'isReminderEnabled', Sort.desc);
     });
   }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy> sortByLastChatDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastChatDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+      sortByLastChatDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastChatDate', Sort.desc);
+    });
+  }
 }
 
 extension AppSettingsQuerySortThenBy
@@ -436,6 +610,19 @@ extension AppSettingsQuerySortThenBy
       thenByDailyReminderTimeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dailyReminderTime', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy> thenByDailyTokenUsage() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dailyTokenUsage', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+      thenByDailyTokenUsageDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dailyTokenUsage', Sort.desc);
     });
   }
 
@@ -491,6 +678,19 @@ extension AppSettingsQuerySortThenBy
       return query.addSortBy(r'isReminderEnabled', Sort.desc);
     });
   }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy> thenByLastChatDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastChatDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+      thenByLastChatDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastChatDate', Sort.desc);
+    });
+  }
 }
 
 extension AppSettingsQueryWhereDistinct
@@ -499,6 +699,13 @@ extension AppSettingsQueryWhereDistinct
       distinctByDailyReminderTime() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'dailyReminderTime');
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QDistinct>
+      distinctByDailyTokenUsage() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'dailyTokenUsage');
     });
   }
 
@@ -521,6 +728,12 @@ extension AppSettingsQueryWhereDistinct
       return query.addDistinctBy(r'isReminderEnabled');
     });
   }
+
+  QueryBuilder<AppSettings, AppSettings, QDistinct> distinctByLastChatDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastChatDate');
+    });
+  }
 }
 
 extension AppSettingsQueryProperty
@@ -535,6 +748,12 @@ extension AppSettingsQueryProperty
       dailyReminderTimeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'dailyReminderTime');
+    });
+  }
+
+  QueryBuilder<AppSettings, int, QQueryOperations> dailyTokenUsageProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'dailyTokenUsage');
     });
   }
 
@@ -555,6 +774,13 @@ extension AppSettingsQueryProperty
       isReminderEnabledProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isReminderEnabled');
+    });
+  }
+
+  QueryBuilder<AppSettings, DateTime?, QQueryOperations>
+      lastChatDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastChatDate');
     });
   }
 }

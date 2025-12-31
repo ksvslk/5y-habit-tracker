@@ -1,8 +1,10 @@
 import 'package:fiveyear/data/app_settings_provider.dart';
+import 'package:fiveyear/data/subscription_service.dart';
 import 'package:fiveyear/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -10,7 +12,13 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsAsync = ref.watch(appSettingsProvider);
+    final subscriptionAsync = ref.watch(subscriptionStatusProvider);
     final colorScheme = Theme.of(context).colorScheme;
+
+    // SIMPLER SOLUTION: 
+    // Just get the value. If it's loading or null, we assume 'false' (Not Pro) 
+    // so the UI renders immediately without a spinner.
+    final bool isPro = subscriptionAsync.valueOrNull ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -24,6 +32,51 @@ class SettingsScreen extends ConsumerWidget {
         data: (settings) {
           return ListView(
             children: [
+              ListTile(
+                title: Text(
+                  'Subscription',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+              
+              // NO SPINNER. NO JANK.
+              // It renders the "Choose Premium" button instantly. 
+              // If the user is actually Pro, it updates the text/icon automatically when data arrives.
+              ListTile(
+                leading: Icon(
+                  isPro ? Icons.workspace_premium : Icons.lock,
+                  color: isPro ? Colors.amber : colorScheme.onSurfaceVariant,
+                ),
+                title: Text(isPro ? 'Premium' : 'Choose Premium'),
+                subtitle: Text(
+                  isPro
+                      ? 'Thank you for your support!'
+                      : 'Unlock all features',
+                ),
+                trailing: isPro
+                    ? Chip(
+                        label: const Text('Active'),
+                        backgroundColor: colorScheme.primaryContainer,
+                        labelStyle: TextStyle(
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : const Icon(Icons.chevron_right),
+                onTap: () {
+                  if (isPro) {
+                    _showSubscriptionDetailsDialog(context, ref, colorScheme);
+                  } else {
+                    RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
+                  }
+                },
+              ),
+
+              const Divider(),
+
               ListTile(
                 title: Text(
                   'Daily Reminder',
@@ -159,5 +212,69 @@ class SettingsScreen extends ConsumerWidget {
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     final minute = dt.minute.toString().padLeft(2, '0');
     return "$hour:$minute $period";
+  }
+
+  void _showSubscriptionDetailsDialog(BuildContext context, WidgetRef ref, ColorScheme colorScheme) {
+    final customerInfoAsync = ref.watch(customerInfoProvider);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.workspace_premium, color: Colors.amber),
+            const SizedBox(width: 8),
+            const Text('5Y Pro Active'),
+          ],
+        ),
+        content: customerInfoAsync.when(
+          loading: () => const Text("Loading details..."), // Minimal text indicator for dialog
+          error: (err, stack) => const Text('Error loading subscription details'),
+          data: (customerInfo) {
+            if (customerInfo == null) {
+              return const Text('No subscription information available');
+            }
+
+            final service = ref.read(subscriptionServiceProvider);
+            final expiryDateString = service.getExpiryDate(customerInfo);
+            final willRenew = service.willRenew(customerInfo);
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Thank you for supporting 5Y Habit Tracker!'),
+                const SizedBox(height: 16),
+                if (expiryDateString != null) ...[
+                  Text(
+                    willRenew
+                        ? 'Renews on: $expiryDateString'
+                        : 'Expires on: $expiryDateString',
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Text(
+                  'Status: ${willRenew ? "Active (Auto-renew)" : "Active (Won\'t renew)"}',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }

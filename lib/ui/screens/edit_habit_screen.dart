@@ -1,6 +1,8 @@
 import 'dart:math';
+import 'package:fiveyear/data/subscription_service.dart'; //
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart'; // Import for Paywall
 import '../../data/habit_schema.dart';
 import '../../data/habit_provider.dart';
 import '../../data/theme_colors.dart';
@@ -159,7 +161,6 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
         margin: const EdgeInsets.only(bottom: 24),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          // MATERIAL 3 FIX: Use proper surface container
           color: colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: borderColor, width: 2),
@@ -189,6 +190,10 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final activeColor = _getReadableColor(backendColor);
+
+    // NEW: Watch subscription status to lock themes
+    final subscriptionAsync = ref.watch(subscriptionStatusProvider);
+    final isPro = subscriptionAsync.value ?? false;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -329,18 +334,29 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final buttonWidth = (constraints.maxWidth - 12) / 2;
+                        final entries = themeData.entries.toList();
+
                         return Wrap(
                           spacing: 12,
                           runSpacing: 12,
-                          children: themeData.entries.map((e) {
+                          children: List.generate(entries.length, (index) {
+                            final e = entries[index];
                             final key = e.key;
                             final data = e.value;
                             final isSelected = (selectedTheme == key);
                             final rawColor = _getColorForTheme(key);
                             final contrastColor = _getReadableColor(rawColor);
 
+                            // NEW: Lock check (Limit to first 5 themes for free users)
+                            final bool isLocked = !isPro && index >= 5;
+
                             return GestureDetector(
                               onTap: () {
+                                if (isLocked) {
+                                  // Trigger Paywall
+                                  RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
+                                  return;
+                                }
                                 FocusScope.of(context).unfocus();
                                 setState(() {
                                   _activeStep = 3;
@@ -356,9 +372,11 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                                   vertical: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? contrastColor.withOpacity(0.2)
-                                      : colorScheme.surfaceContainerHigh,
+                                  color: isLocked
+                                      ? colorScheme.surfaceContainerHigh.withOpacity(0.5)
+                                      : (isSelected
+                                          ? contrastColor.withOpacity(0.2)
+                                          : colorScheme.surfaceContainerHigh),
                                   border: Border.all(
                                     color: isSelected
                                         ? contrastColor
@@ -367,21 +385,36 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    data['name'],
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                      color: isSelected
-                                          ? contrastColor
-                                          : colorScheme.onSurface,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // Theme Name
+                                    Opacity(
+                                      opacity: isLocked ? 0.3 : 1.0,
+                                      child: Text(
+                                        data['name'],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          color: isSelected
+                                              ? contrastColor
+                                              : colorScheme.onSurface,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
                                     ),
-                                  ),
+                                    // Lock Icon
+                                    if (isLocked)
+                                      Icon(
+                                        Icons.lock_outline,
+                                        size: 18,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                  ],
                                 ),
                               ),
                             );
-                          }).toList(),
+                          }),
                         );
                       },
                     ),

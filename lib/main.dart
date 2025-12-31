@@ -13,9 +13,9 @@ Future<void> initializeRevenueCat() async {
   // Platform-specific API keys
   String apiKey;
   if (Platform.isIOS) {
-    apiKey = 'test_ZPmEYLxdeAFGnZRnBCERJScPvDn';
+    apiKey = 'appl_ilGImMrklPJWeVLyoNkZUllnHfp';
   } else if (Platform.isAndroid) {
-    apiKey = 'test_ZPmEYLxdeAFGnZRnBCERJScPvDn';
+    apiKey = 'goog_CbsVMNhxTnVdauUYFBhnpNlwBXv';
   } else {
     throw UnsupportedError('Platform not supported');
   }
@@ -32,7 +32,8 @@ Future<void> main() async {
       .read(notificationServiceProvider)
       .init();
 
-  // Initialize Gemma
+  await initializeRevenueCat();
+  
   await FlutterGemma.initialize();
 
   // 1. Enable Edge-to-Edge (Android 10+)

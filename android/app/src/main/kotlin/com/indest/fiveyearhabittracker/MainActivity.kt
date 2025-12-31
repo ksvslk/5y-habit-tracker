@@ -1,7 +1,7 @@
 package com.indest.fiveyearhabittracker // REPLACE WITH YOUR ACTUAL PACKAGE NAME
 
 import android.os.Bundle
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -11,11 +11,11 @@ import com.google.android.play.core.assetpacks.AssetPackState
 import com.google.android.play.core.assetpacks.AssetPackStateUpdateListener
 import com.google.android.play.core.assetpacks.model.AssetPackStatus
 
-class MainActivity: FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL_METHOD = "com.example.fiveyear/asset_delivery"
     private val CHANNEL_EVENT = "com.example.fiveyear/asset_progress"
     
-    private lateinit var assetPackManager: AssetPackManager
+    private var assetPackManager: AssetPackManager? = null
     private var eventSink: EventChannel.EventSink? = null
     
     // Store the pending result to complete when download finishes
@@ -25,6 +25,7 @@ class MainActivity: FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
+        // Initialize AssetPackManager here instead of as a lateinit property
         assetPackManager = AssetPackManagerFactory.getInstance(applicationContext)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_METHOD).setMethodCallHandler { call, result ->
@@ -32,7 +33,7 @@ class MainActivity: FlutterActivity() {
                 "getAssetPackPathIfExists" -> {
                     val assetPackName = call.argument<String>("packName")
                     if (assetPackName != null) {
-                        checkAssetPackExists(assetPackName, result)  // New method - just checks
+                        checkAssetPackExists(assetPackName, result)
                     } else {
                         result.error("INVALID_ARG", "Pack name is null", null)
                     }
@@ -40,7 +41,7 @@ class MainActivity: FlutterActivity() {
                 "getAssetPackPath" -> {
                     val assetPackName = call.argument<String>("packName")
                     if (assetPackName != null) {
-                        fetchAssetPack(assetPackName, result)  // Existing method - downloads
+                        fetchAssetPack(assetPackName, result)
                     } else {
                         result.error("INVALID_ARG", "Pack name is null", null)
                     }
@@ -49,16 +50,15 @@ class MainActivity: FlutterActivity() {
             }
         }
 
-        // Event Channel remains the same
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_EVENT).setStreamHandler(
             object : EventChannel.StreamHandler {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                     eventSink = events
-                    assetPackManager.registerListener(listener)
+                    assetPackManager?.registerListener(listener)
                 }
 
                 override fun onCancel(arguments: Any?) {
-                    assetPackManager.unregisterListener(listener)
+                    assetPackManager?.unregisterListener(listener)
                     eventSink = null
                 }
             }
@@ -82,13 +82,12 @@ class MainActivity: FlutterActivity() {
             }
             AssetPackStatus.COMPLETED -> {
                 runOnUiThread {
-                    eventSink?.success(1.0) // Ensure we hit 100%
+                    eventSink?.success(1.0)
                 }
                 
-                // If we have a pending result, complete it now
                 pendingResult?.let { result ->
                     pendingPackName?.let { packName ->
-                        val location = assetPackManager.getPackLocation(packName)
+                        val location = assetPackManager?.getPackLocation(packName)
                         runOnUiThread {
                             result.success(location?.assetsPath())
                         }
@@ -127,8 +126,14 @@ class MainActivity: FlutterActivity() {
     }
 
     private fun fetchAssetPack(packName: String, result: MethodChannel.Result) {
+        val manager = assetPackManager
+        if (manager == null) {
+            result.error("NOT_INITIALIZED", "AssetPackManager not initialized", null)
+            return
+        }
+
         // 1. Check if already exists
-        val packLocation = assetPackManager.getPackLocation(packName)
+        val packLocation = manager.getPackLocation(packName)
         if (packLocation != null) {
             result.success(packLocation.assetsPath())
             return
@@ -139,7 +144,7 @@ class MainActivity: FlutterActivity() {
         pendingPackName = packName
         
         val fetchList = listOf(packName)
-        assetPackManager.fetch(fetchList)
+        manager.fetch(fetchList)
             .addOnFailureListener { exception ->
                 runOnUiThread {
                     result.error("DOWNLOAD_FAILED", exception.message, null)
@@ -147,17 +152,25 @@ class MainActivity: FlutterActivity() {
                 pendingResult = null
                 pendingPackName = null
             }
-        // Note: We don't call result.success() here anymore
-        // It will be called when the listener receives COMPLETED status
     }
 
-    // NEW METHOD: Just checks if pack exists, doesn't download
     private fun checkAssetPackExists(packName: String, result: MethodChannel.Result) {
-        val packLocation = assetPackManager.getPackLocation(packName)
+        val manager = assetPackManager
+        if (manager == null) {
+            result.error("NOT_INITIALIZED", "AssetPackManager not initialized", null)
+            return
+        }
+
+        val packLocation = manager.getPackLocation(packName)
         if (packLocation != null) {
             result.success(packLocation.assetsPath())
         } else {
-            result.success(null)  // Return null if doesn't exist, don't download
+            result.success(null)
         }
+    }
+
+    override fun onDestroy() {
+        assetPackManager?.unregisterListener(listener)
+        super.onDestroy()
     }
 }

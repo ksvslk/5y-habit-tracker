@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'package:fiveyear/data/app_settings_repository.dart'; 
+import 'package:fiveyear/data/app_settings_provider.dart'; 
 import 'package:fiveyear/data/chat_repository.dart';
 import 'package:fiveyear/data/database_provider.dart';
+import 'package:fiveyear/data/subscription_service.dart'; 
 import 'package:fiveyear/services/gemma_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gemma/flutter_gemma.dart'; // REQUIRED for Message class
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
@@ -15,6 +19,8 @@ final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>(
     return ChatController(
       ref.watch(gemmaServiceProvider),
       ref.watch(chatRepositoryProvider),
+      ref.watch(appSettingsRepositoryProvider),
+      ref.watch(subscriptionServiceProvider),
     );
   },
 );
@@ -38,6 +44,8 @@ class ChatState {
   final double downloadProgress;
   final int usedTokens, maxTokens;
   final String? error;
+  
+  final bool isDailyLimitReached;
 
   ChatState({
     this.messages = const [],
@@ -50,6 +58,7 @@ class ChatState {
     this.isStopping = false,
     this.usedTokens = 0,
     this.maxTokens = 2048,
+    this.isDailyLimitReached = false,
     this.error,
   });
 
@@ -66,6 +75,7 @@ class ChatState {
     bool? isStopping,
     double? downloadProgress,
     int? usedTokens,
+    bool? isDailyLimitReached,
     String? error,
   }) {
     return ChatState(
@@ -78,6 +88,7 @@ class ChatState {
       isStopping: isStopping ?? this.isStopping,
       downloadProgress: downloadProgress ?? this.downloadProgress,
       usedTokens: usedTokens ?? this.usedTokens,
+      isDailyLimitReached: isDailyLimitReached ?? this.isDailyLimitReached,
       maxTokens: maxTokens,
       error: error,
     );
@@ -87,14 +98,25 @@ class ChatState {
 class ChatController extends StateNotifier<ChatState> {
   final GemmaService _service;
   final ChatRepository _repo;
+  final AppSettingsRepository _settingsRepo; 
+  final SubscriptionService _subscriptionService; 
+  
   StreamSubscription? _chatSubscription;
+  StreamSubscription? _proStatusSubscription; // Added for real-time updates
   Timer? _timeoutTimer;
   
-  // Track the current AI message being generated
   ChatMessage? _currentAiMessage;
   bool _isGenerating = false;
+  
+  // Limit constants
+  static const int _dailyFreeTokenLimit = 1024; 
 
-  ChatController(this._service, this._repo) : super(ChatState()) {
+  ChatController(
+    this._service, 
+    this._repo, 
+    this._settingsRepo, 
+    this._subscriptionService
+  ) : super(ChatState()) {
     _initialize();
   }
 
@@ -103,12 +125,20 @@ class ChatController extends StateNotifier<ChatState> {
     final msgs = history
         .map((e) => ChatMessage(text: e.text ?? "", isUser: e.isUser ?? false))
         .toList();
+
+    // Listen to real-time subscription changes
+    _proStatusSubscription = _subscriptionService.subscriptionStatusStream.listen((isPro) {
+      if (isPro && state.isDailyLimitReached) {
+        state = state.copyWith(isDailyLimitReached: false);
+      }
+    });
         
-    int initialTokens = 0;
+    // Initial check
+    await _checkDailyLimit();
 
     state = state.copyWith(
       messages: msgs,
-      usedTokens: initialTokens,
+      usedTokens: 0, 
       isCheckingForModel: true,
     );
 
@@ -122,6 +152,25 @@ class ChatController extends StateNotifier<ChatState> {
     } catch (e) {
       state = state.copyWith(isCheckingForModel: false, error: "Init failed");
     }
+  }
+
+  Future<bool> _checkDailyLimit() async {
+    final isPro = await _subscriptionService.hasProEntitlement();
+    if (isPro) {
+      if (state.isDailyLimitReached) {
+         state = state.copyWith(isDailyLimitReached: false);
+      }
+      return false; 
+    }
+
+    final settings = await _settingsRepo.getSettings();
+    final used = settings.dailyTokenUsage;
+    
+    final isReached = used >= _dailyFreeTokenLimit;
+    if (state.isDailyLimitReached != isReached) {
+      state = state.copyWith(isDailyLimitReached: isReached);
+    }
+    return isReached;
   }
 
   Future<void> downloadAndStart() async {
@@ -154,7 +203,30 @@ class ChatController extends StateNotifier<ChatState> {
     try {
       await _service.init(); 
       await _service.loadEngine();
-      await _service.performSecureReset();
+      
+      // --- CONTEXT RESTORATION LOGIC ---
+      
+      // 1. Get messages from state (Newest First) -> Reverse to Oldest First
+      // 2. Take last 20 to preserve memory
+      final recentHistory = state.messages.reversed
+          .take(20)
+          .map((m) => Message.text(text: m.content.value, isUser: m.isUser))
+          .toList();
+
+      // 3. Define the System Prompt
+      final systemPrompt = Message.text(
+        text: "You are a support companion. Please answer in 2-3 sentences max.", 
+        isUser: false
+      );
+
+      // 4. Combine: System Prompt + History
+      final fullHistory = [systemPrompt, ...recentHistory];
+      
+      // 5. Inject into Gemma
+      await _service.performSecureReset(history: fullHistory);
+      
+      // --- END CONTEXT RESTORATION ---
+
       state = state.copyWith(isLoadingEngine: false);
     } catch (e) {
       state = state.copyWith(isLoadingEngine: false, error: "AI Engine refused to start.");
@@ -165,8 +237,13 @@ class ChatController extends StateNotifier<ChatState> {
     if (state.error != null) state = state.copyWith(error: null);
   }
 
-  Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty || _isGenerating || state.isLoadingEngine) return;
+  Future<bool> sendMessage(String text) async {
+    if (text.trim().isEmpty || _isGenerating || state.isLoadingEngine) return false;
+
+    final isLimitReached = await _checkDailyLimit();
+    if (isLimitReached) {
+      return false; 
+    }
 
     final userMsg = ChatMessage(text: text, isUser: true);
     final aiMsg = ChatMessage(text: "", isUser: false);
@@ -174,14 +251,18 @@ class ChatController extends StateNotifier<ChatState> {
     _currentAiMessage = aiMsg;
     _isGenerating = true;
 
+    final inputTokens = (text.length / 3.5).ceil();
+
     state = state.copyWith(
       messages: [aiMsg, userMsg, ...state.messages],
       isThinking: true,
-      usedTokens: state.usedTokens + (text.length / 3.5).ceil(),
+      usedTokens: state.usedTokens + inputTokens,
       error: null,
     );
     
     _repo.saveMessage(text, true).ignore(); 
+    
+    await _settingsRepo.incrementTokenUsage(inputTokens);
 
     _timeoutTimer?.cancel();
     _timeoutTimer = Timer(const Duration(seconds: 30), () {
@@ -192,22 +273,19 @@ class ChatController extends StateNotifier<ChatState> {
     });
 
     _performGeneration(text, aiMsg);
+    return true;
   }
 
   void _performGeneration(String text, ChatMessage aiMsg) {
     bool gotAnyTokens = false;
     int tokensGenerated = 0;
 
-    print("🔵 Starting generation. Current tokens: ${state.usedTokens}/${state.maxTokens}");
+    print("🔵 Starting generation...");
 
     try {
       _chatSubscription = _service.streamResponse(text).listen(
         (token) {
-          // Ignore tokens if we've been stopped
-          if (!_isGenerating) {
-            print("⚠️ Received token after stop, ignoring");
-            return;
-          }
+          if (!_isGenerating) return;
           
           gotAnyTokens = true;
           tokensGenerated++;
@@ -217,14 +295,10 @@ class ChatController extends StateNotifier<ChatState> {
             state = state.copyWith(usedTokens: state.usedTokens + 10);
           }
         },
-        onDone: () {
-          // Only process if we're still generating (not stopped)
-          if (!_isGenerating) {
-            print("⚠️ onDone called after stop, ignoring");
-            return;
-          }
+        onDone: () async {
+          if (!_isGenerating) return;
           
-          print("✅ Generation done. Got tokens: $gotAnyTokens, Total generated: $tokensGenerated");
+          print("✅ Generation done. Tokens: $tokensGenerated");
           _timeoutTimer?.cancel();
           
           if (tokensGenerated % 10 != 0) {
@@ -237,18 +311,16 @@ class ChatController extends StateNotifier<ChatState> {
           
           if (gotAnyTokens && aiMsg.content.value.trim().isNotEmpty) {
             _repo.saveMessage(aiMsg.content.value, false);
+            
+            await _settingsRepo.incrementTokenUsage(tokensGenerated);
+            await _checkDailyLimit(); 
           } else if (!gotAnyTokens) {
-             print("❌ NO TOKENS RECEIVED - Memory full?");
              _handleGenerationFailure(aiMsg);
              state = state.copyWith(error: "Memory Full. Please clear chat.");
           }
         },
         onError: (e) {
-          if (!_isGenerating) {
-            print("⚠️ onError called after stop, ignoring");
-            return;
-          }
-          
+          if (!_isGenerating) return;
           print("❌ Generation error: $e");
           _timeoutTimer?.cancel();
           _isGenerating = false;
@@ -262,7 +334,6 @@ class ChatController extends StateNotifier<ChatState> {
         },
       );
     } catch (e) {
-      print("❌ Stream setup error: $e");
       _isGenerating = false;
       _currentAiMessage = null;
       _handleGenerationFailure(aiMsg);
@@ -276,100 +347,38 @@ class ChatController extends StateNotifier<ChatState> {
 
   void _handleGenerationFailure(ChatMessage aiMsg) {
     final currentMsgs = List<ChatMessage>.from(state.messages);
-    // Remove if empty OR only whitespace
     if (aiMsg.content.value.trim().isEmpty && currentMsgs.contains(aiMsg)) {
       currentMsgs.remove(aiMsg);
       state = state.copyWith(messages: currentMsgs);
     }
   }
 
-  /// Force stop with guaranteed state cleanup
   void _forceStopGeneration() {
-    print("🛑 Force stopping generation...");
-    
-    // Mark as stopped FIRST
     _isGenerating = false;
-    
-    // Cancel timers and streams
     _timeoutTimer?.cancel();
     _chatSubscription?.cancel();
-    
-    // Remove empty AI message if exists
-    if (_currentAiMessage != null) {
-      _handleGenerationFailure(_currentAiMessage!);
-    }
-    
+    if (_currentAiMessage != null) _handleGenerationFailure(_currentAiMessage!);
     _currentAiMessage = null;
-    
-    // Force state update
-    state = state.copyWith(
-      isThinking: false,
-      isStopping: false,
-    );
-    
-    // Try to stop service (but don't wait for it)
-    _service.stopGeneration().catchError((e) {
-      print("⚠️ Service stop error (ignored): $e");
-    });
-    
-    print("✅ Force stop complete");
+    state = state.copyWith(isThinking: false, isStopping: false);
+    _service.stopGeneration().catchError((e) {});
   }
 
   Future<void> stopGeneration() async {
-    if (!_isGenerating) {
-      print("⚠️ Not generating, nothing to stop");
-      state = state.copyWith(isThinking: false, isStopping: false);
-      return;
-    }
-    
-    print("🛑 User requested stop...");
+    if (!_isGenerating) return;
     state = state.copyWith(isStopping: true);
-    
-    // Create a timeout for the stop operation itself
-    bool stopCompleted = false;
-    
-    // Start the stop operation
-    final stopFuture = Future.microtask(() async {
-      _forceStopGeneration();
-      stopCompleted = true;
-    });
-    
-    // Wait max 2 seconds for stop to complete
-    await stopFuture.timeout(
-      const Duration(seconds: 2),
-      onTimeout: () {
-        print("⚠️ Stop operation timed out, forcing cleanup");
-        if (!stopCompleted) {
-          _forceStopGeneration();
-        }
-      },
-    );
-    
-    print("✅ Stop completed");
+    final stopFuture = Future.microtask(() => _forceStopGeneration());
+    await stopFuture.timeout(const Duration(seconds: 2), onTimeout: _forceStopGeneration);
   }
 
   Future<void> clearMemory() async {
-    print("🗑️ Clearing memory...");
-    
-    // Force stop any generation first
-    if (_isGenerating) {
-      _forceStopGeneration();
-    }
-    
+    if (_isGenerating) _forceStopGeneration();
     state = state.copyWith(isLoadingEngine: true);
-    
-    // Clear database FIRST
     await _repo.clearHistory();
-    print("   ✅ Database cleared");
-    
     try {
-      // Use clearHistory() API to wipe the AI's conversation context
-      await _service.performSecureReset();
-      print("   ✅ AI context cleared");
-      
+      // Pass empty history for a full wipe
+      await _service.performSecureReset(history: []);
       _currentAiMessage = null;
       _isGenerating = false;
-      
       state = ChatState(
         messages: [],
         usedTokens: 0,
@@ -383,23 +392,16 @@ class ChatController extends StateNotifier<ChatState> {
         downloadProgress: 0.0,
         error: null,
       );
-      
-      print("✅ Memory cleared completely");
     } catch (e) {
-      print("❌ Reset failed: $e");
-      state = state.copyWith(
-        isLoadingEngine: false,
-        error: "Reset failed: $e",
-      );
+      state = state.copyWith(isLoadingEngine: false, error: "Reset failed: $e");
     }
   }
 
   @override
   void dispose() {
+    _proStatusSubscription?.cancel(); // Cancel subscription listener
     _timeoutTimer?.cancel();
     _chatSubscription?.cancel();
-    _isGenerating = false;
-    _currentAiMessage = null;
     super.dispose();
   }
 }
