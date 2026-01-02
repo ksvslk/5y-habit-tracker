@@ -27,6 +27,25 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+# --- NEW BLOCK START ---
+dynamic_framework = ['isar_flutter_libs']
+
+pre_install do |installer|
+  Pod::Installer::Xcode::TargetValidator.send(:define_method, :verify_no_static_framework_transitive_dependencies) {}
+  installer.pod_targets.each {| pod |
+    if dynamic_framework.include?(pod.name)
+      puts "Turning to dynamic framework: " + pod.name
+      def pod.dynamic_framework;
+        true
+      end
+      def pod.build_type;
+        Pod::BuildType.dynamic_framework
+      end
+    end
+  }
+end
+# --- NEW BLOCK END ---
+
 target 'Runner' do
   use_frameworks! :linkage => :static
 
@@ -35,6 +54,7 @@ target 'Runner' do
     inherit! :search_paths
   end
 end
+
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
