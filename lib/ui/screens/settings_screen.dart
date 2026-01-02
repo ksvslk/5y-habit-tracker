@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:fiveyear/data/app_settings_provider.dart';
 import 'package:fiveyear/data/subscription_service.dart';
 import 'package:fiveyear/services/notification_service.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -15,8 +19,8 @@ class SettingsScreen extends ConsumerWidget {
     final subscriptionAsync = ref.watch(subscriptionStatusProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    // SIMPLER SOLUTION: 
-    // Just get the value. If it's loading or null, we assume 'false' (Not Pro) 
+    // SIMPLER SOLUTION:
+    // Just get the value. If it's loading or null, we assume 'false' (Not Pro)
     // so the UI renders immediately without a spinner.
     final bool isPro = subscriptionAsync.valueOrNull ?? false;
 
@@ -41,9 +45,9 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              
+
               // NO SPINNER. NO JANK.
-              // It renders the "Choose Premium" button instantly. 
+              // It renders the "Choose Premium" button instantly.
               // If the user is actually Pro, it updates the text/icon automatically when data arrives.
               ListTile(
                 leading: Icon(
@@ -52,9 +56,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 title: Text(isPro ? 'Premium' : 'Choose Premium'),
                 subtitle: Text(
-                  isPro
-                      ? 'Thank you for your support!'
-                      : 'Unlock all features',
+                  isPro ? 'Thank you for your support!' : 'Unlock all features',
                 ),
                 trailing: isPro
                     ? Chip(
@@ -68,7 +70,7 @@ class SettingsScreen extends ConsumerWidget {
                     : const Icon(Icons.chevron_right),
                 onTap: () {
                   if (isPro) {
-                   null;
+                    null;
                   } else {
                     RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
                   }
@@ -145,7 +147,7 @@ class SettingsScreen extends ConsumerWidget {
                     }
                   },
                 ),
-              
+
               const Divider(),
 
               ListTile(
@@ -158,6 +160,22 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
               ListTile(
+                leading: const Icon(Icons.privacy_tip),
+                title: const Text('Privacy Policy'),
+                onTap: () {
+                  launchUrl(Uri.parse('https://indest.ee/5y-privacy-policy/'));
+                },
+              ),
+              Platform.isAndroid
+                  ? ListTile(
+                      leading: const Icon(Icons.info_outline),
+                      title: const Text('EULA'),
+                      onTap: () {
+                        launchUrl(Uri.parse('https://indest.ee/eula-for-5y/'));
+                      },
+                    )
+                  : SizedBox.shrink(),
+              ListTile(
                 leading: const Icon(Icons.description),
                 title: const Text('Licenses'),
                 trailing: const Icon(Icons.chevron_right),
@@ -168,7 +186,14 @@ class SettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-
+               ListTile(
+                leading: const Icon(Icons.mail),
+                title: const Text('Contact Me'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                 launchUrl(Uri.parse('mailto:indrek@indest.ee?subject=5Y&body=Hi!'));
+                },
+              ),
               const SizedBox(height: 20),
               const Divider(),
 
@@ -179,21 +204,24 @@ class SettingsScreen extends ConsumerWidget {
 
                   final version = snapshot.data!.version;
                   final buildNumber = snapshot.data!.buildNumber;
-                  const commitHash = String.fromEnvironment('GIT_HASH', defaultValue: 'Dev');
+                  const commitHash = String.fromEnvironment(
+                    'GIT_HASH',
+                    defaultValue: 'Dev',
+                  );
 
                   return ListTile(
                     title: Text(
                       'v$version ($buildNumber)',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     subtitle: Text(
                       'Commit: $commitHash',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                            fontFamily: 'monospace',
-                          ),
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        fontFamily: 'monospace',
+                      ),
                     ),
                   );
                 },
