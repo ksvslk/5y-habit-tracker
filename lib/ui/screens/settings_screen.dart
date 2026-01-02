@@ -166,7 +166,7 @@ class SettingsScreen extends ConsumerWidget {
                   launchUrl(Uri.parse('https://indest.ee/5y-privacy-policy/'));
                 },
               ),
-              Platform.isAndroid
+              Platform.isIOS
                   ? ListTile(
                       leading: const Icon(Icons.info_outline),
                       title: const Text('EULA'),

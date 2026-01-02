@@ -27,6 +27,20 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - purchases_flutter (9.10.2):
+    - Flutter
+    - PurchasesHybridCommon (= 17.25.0)
+  - purchases_ui_flutter (9.10.2):
+    - Flutter
+    - PurchasesHybridCommonUI (= 17.25.0)
+  - PurchasesHybridCommon (17.25.0):
+    - RevenueCat (= 5.51.1)
+  - PurchasesHybridCommonUI (17.25.0):
+    - PurchasesHybridCommon (= 17.25.0)
+    - RevenueCatUI (= 5.51.1)
+  - RevenueCat (5.51.1)
+  - RevenueCatUI (5.51.1):
+    - RevenueCat (= 5.51.1)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -40,6 +54,8 @@ PODS:
     - TensorFlowLiteC (= 0.0.1-nightly.20250619)
     - TensorFlowLiteSwift/Privacy (= 0.0.1-nightly.20250619)
   - TensorFlowLiteSwift/Privacy (0.0.1-nightly.20250619)
+  - url_launcher_ios (0.0.1):
+    - Flutter
   - wakelock_plus (0.0.1):
     - Flutter
 
@@ -54,13 +70,20 @@ DEPENDENCIES:
   - large_file_handler (from `.symlinks/plugins/large_file_handler/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
+  - purchases_ui_flutter (from `.symlinks/plugins/purchases_ui_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - wakelock_plus (from `.symlinks/plugins/wakelock_plus/ios`)
 
 SPEC REPOS:
   trunk:
     - MediaPipeTasksGenAI
     - MediaPipeTasksGenAIC
+    - PurchasesHybridCommon
+    - PurchasesHybridCommonUI
+    - RevenueCat
+    - RevenueCatUI
     - TensorFlowLiteC
     - TensorFlowLiteSelectTfOps
     - TensorFlowLiteSwift
@@ -86,8 +109,14 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  purchases_flutter:
+    :path: ".symlinks/plugins/purchases_flutter/ios"
+  purchases_ui_flutter:
+    :path: ".symlinks/plugins/purchases_ui_flutter/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
   wakelock_plus:
     :path: ".symlinks/plugins/wakelock_plus/ios"
 
@@ -104,10 +133,17 @@ SPEC CHECKSUMS:
   MediaPipeTasksGenAIC: ec35d9f431f6a6b651a0bc9f67a4ed149ffa575c
   package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
+  purchases_flutter: 7cbb87481a018c1bb8b4966b7d446a7c19d96d87
+  purchases_ui_flutter: 1905cebf3f46e03aeefba0f6258000f3cdd32641
+  PurchasesHybridCommon: 6a79a873ab52f777bfa36e9516f3fcd84d3b3428
+  PurchasesHybridCommonUI: 3c1f78addfb3f470713548b4eac8c59254d0efe6
+  RevenueCat: eab035bbab271faccfef5c36eaff2a1ffef14dc0
+  RevenueCatUI: c6acb3648fa58ccb4f0f178556ed0278b796234f
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   TensorFlowLiteC: 215ef57653dd0fa09a474e7d94d79ae64a870b28
   TensorFlowLiteSelectTfOps: c71d7dcd063f5d66ae1b9a85cc5aa993f824eff9
   TensorFlowLiteSwift: 6de8da348de331778167a0f751ad74c41d8b0554
+  url_launcher_ios: bb13df5870e8c4234ca12609d04010a21be43dfa
   wakelock_plus: 76957ab028e12bfa4e66813c99e46637f367fc7e
 
 PODFILE CHECKSUM: c0915517eae1a513480956f02c7781054ca94770

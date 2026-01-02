@@ -181,80 +181,6 @@ class CalendarController {
     }
   }
 
-  void fillYear(DateTime focusedMonth) {
-    final now = DateTime.now();
-    if (focusedMonth.year > now.year) {
-      return;
-    }
-    HapticFeedback.mediumImpact();
-
-    final targetYear = focusedMonth.year;
-    final newSet = HashSet<int>.from(dates.value);
-
-    final startOfYear = DateTime.utc(targetYear, 1, 1);
-    final endDate = targetYear == now.year
-        ? DateTime.utc(now.year, now.month, now.day)
-        : DateTime.utc(targetYear, 12, 31);
-
-    DateTime current = startOfYear;
-    while (current.isBefore(endDate) || current.isAtSameMomentAs(endDate)) {
-      final dateInt = current.year * 10000 + current.month * 100 + current.day;
-      newSet.add(dateInt);
-      current = current.add(const Duration(days: 1));
-    }
-
-    dates.value = newSet;
-    _recalc(newSet);
-    if (onSave != null) onSave!(newSet);
-  }
-
-  void addRandomDates(DateTime focusedMonth) {
-    final now = DateTime.now();
-    if (focusedMonth.year > now.year) {
-      return;
-    }
-    HapticFeedback.mediumImpact();
-
-    final random = Random();
-    final targetYear = focusedMonth.year;
-    final newSet = HashSet<int>.from(dates.value);
-
-    final startOfYear = DateTime.utc(targetYear, 1, 1);
-    final endDate = targetYear == now.year
-        ? DateTime.utc(now.year, now.month, now.day)
-        : DateTime.utc(targetYear, 12, 31);
-
-    final daysInPeriod = endDate.difference(startOfYear).inDays + 1;
-    final minDays = (daysInPeriod * 0.3).round();
-    final maxDays = (daysInPeriod * 0.8).round();
-    final targetCount = minDays + random.nextInt(maxDays - minDays + 1);
-
-    final availableDays = <DateTime>[];
-    DateTime current = startOfYear;
-    while (current.isBefore(endDate) || current.isAtSameMomentAs(endDate)) {
-      availableDays.add(current);
-      current = current.add(const Duration(days: 1));
-    }
-    availableDays.shuffle(random);
-
-    for (int i = 0; i < targetCount && i < availableDays.length; i++) {
-      final date = availableDays[i];
-      final dateInt = date.year * 10000 + date.month * 100 + date.day;
-      newSet.add(dateInt);
-    }
-    dates.value = newSet;
-    _recalc(newSet);
-    if (onSave != null) onSave!(newSet);
-  }
-
-  void clearAllDates() {
-    HapticFeedback.mediumImpact();
-    final newSet = HashSet<int>();
-    dates.value = newSet;
-    _recalc(newSet);
-    if (onSave != null) onSave!(newSet);
-  }
-
   void _recalc(HashSet<int> set) {
     final list = set.toList()..sort();
     compute(_calcStatsInIsolate, list).then((s) {
@@ -279,100 +205,58 @@ class CalendarScreen extends ConsumerStatefulWidget {
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   late final CalendarController _controller;
-  late Habit _currentHabit;
-  bool _showDebugButtons = false;
   late DateTime _focusedMonth;
 
-  late Color _currentColor;
-  late Color _activeColor;
-  late Color _readableColor;
+  // Colors are calculated based on the active habit's theme
+  Color? _currentColor;
+  Color? _activeColor;
+  Color? _readableColor;
   final int _anchorYear = DateTime.now().year;
 
   static const double _sidePadding = 20.0;
 
-  // ADD THIS METHOD
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // This runs before build() and allows safe access to Theme.of(context)
-    _updateColor(_focusedMonth.year);
-  }
-
   @override
   void initState() {
     super.initState();
-
-    _currentHabit = widget.habit;
-
     final now = DateTime.now();
     int targetYear = widget.initialYear ?? now.year;
     int targetMonth = (targetYear == now.year) ? now.month : 1;
-
     _focusedMonth = DateTime.utc(targetYear, targetMonth, 1);
-
+    
     _controller = CalendarController();
-    _controller.load(_currentHabit.completedDays);
+    _controller.load(widget.habit.completedDays);
     _controller.onSave = _handleSave;
-
-    // REMOVED: WidgetsBinding.instance.addPostFrameCallback...
-    // The color update is now handled in didChangeDependencies
   }
 
-  @override
-  void didUpdateWidget(CalendarScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.habit != oldWidget.habit) {
-      setState(() {
-        _currentHabit = widget.habit;
-        _updateColor(_focusedMonth.year);
-      });
-    }
-  }
-
-  void _updateColor(int year) {
-    int yearDiff = year - _anchorYear;
+  void _calculateColors(Habit habit) {
+    int yearDiff = _focusedMonth.year - _anchorYear;
     int assetIndex = ((yearDiff % 5) + 5) % 5 + 1;
 
     Color newColor;
     try {
-      final themeName = _currentHabit.theme;
+      final themeName = habit.theme;
       if (themeData.containsKey(themeName)) {
         final colors = themeData[themeName]['colors'] as List<Color>;
         newColor = colors[assetIndex - 1];
       } else {
-        newColor = Color(_currentHabit.colorValue);
+        newColor = Color(habit.colorValue);
       }
     } catch (e) {
-      newColor = Color(_currentHabit.colorValue);
+      newColor = Color(habit.colorValue);
     }
 
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
-
     final hsl = HSLColor.fromColor(newColor);
-    Color readable;
-    Color active;
 
     if (isDark) {
-      readable = hsl.withLightness(max(hsl.lightness, 0.75)).toColor();
-      active = hsl.withLightness(max(hsl.lightness, 0.30)).toColor();
+      _readableColor = hsl.withLightness(max(hsl.lightness, 0.75)).toColor();
+      _activeColor = hsl.withLightness(max(hsl.lightness, 0.30)).toColor();
     } else {
-      readable = hsl.withLightness(min(hsl.lightness, 0.4)).toColor();
-      active = hsl.withLightness(min(hsl.lightness, 0.85)).toColor();
+      _readableColor = hsl.withLightness(min(hsl.lightness, 0.4)).toColor();
+      _activeColor = hsl.withLightness(min(hsl.lightness, 0.85)).toColor();
     }
-
-    setState(() {
-      _currentColor = newColor;
-      _readableColor = readable;
-      _activeColor = active;
-    });
-  }
-
-  void _onMonthChanged(DateTime month) {
-    if (month.year != _focusedMonth.year) {
-      _updateColor(month.year);
-    }
-    setState(() => _focusedMonth = month);
+    _currentColor = newColor;
   }
 
   @override
@@ -388,15 +272,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       if (mounted) {
         ref
             .read(habitRepositoryProvider)
-            .updateHabitDays(_currentHabit.id, strings);
+            .updateHabitDays(widget.habit.id, strings);
       }
     });
   }
 
-  void _showYearPicker() {
+  void _showYearPicker(Habit habit) {
     final int currentYear = DateTime.now().year;
     final int startYear = currentYear - 100;
-    final int range = 110;
+    const int range = 110;
 
     final int selectedYear = _focusedMonth.year;
     int initialIndex = selectedYear - startYear;
@@ -409,12 +293,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       initialScrollOffset: scrollOffset.clamp(0.0, double.infinity),
     );
 
-    final surfaceColor = Theme.of(context).colorScheme.surface;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     showModalBottomSheet(
       context: context,
-      backgroundColor: surfaceColor,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -430,7 +311,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
-                    color: isDark ? Colors.white : Colors.black,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
                   ),
                 ),
               ),
@@ -448,24 +329,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           "$year",
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? _readableColor
-                                : (isDark ? Colors.white70 : Colors.black),
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected 
+                                ? _readableColor 
+                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black),
                           ),
                         ),
                       ),
                       onTap: () {
-                        Navigator.pop(context);
                         setState(() {
-                          _focusedMonth = DateTime.utc(
-                            year,
-                            _focusedMonth.month,
-                            1,
-                          );
+                          _focusedMonth = DateTime.utc(year, _focusedMonth.month, 1);
                         });
+                        Navigator.pop(context);
                       },
                     );
                   },
@@ -480,66 +355,51 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final iconColor = isDark ? Colors.white70 : Colors.black87;
-    final dateColor = isDark ? Colors.white : Colors.black87;
+    // Watch the habits stream to react to database changes
+    final habitsAsync = ref.watch(habitsProvider);
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: _sidePadding,
-                vertical: 8.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // LEFT SIDE: Edit Button (Replaced Close 'X')
-                  IconButton(
-                    icon: Icon(Icons.edit, color: iconColor),
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EditHabitScreen(habit: _currentHabit),
-                        ),
-                      );
+    return habitsAsync.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (err, stack) => Scaffold(body: Center(child: Text("Error: $err"))),
+      data: (allHabits) {
+        // Extract the latest data for this specific habit
+        final currentHabit = allHabits.firstWhere(
+          (h) => h.id == widget.habit.id,
+          orElse: () => widget.habit,
+        );
 
-                      if (result == 'DELETED') {
-                        if (mounted) Navigator.pop(context); // Close calendar
-                      } else if (result is Habit) {
-                        setState(() {
-                          _currentHabit = result;
-                          _updateColor(_focusedMonth.year);
-                        });
-                      }
-                    },
-                  ),
+        // Calculate colors based on current habit settings
+        _calculateColors(currentHabit);
 
-                  // CENTER: Title
-                  Text(
-                    _currentHabit.name,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final iconColor = isDark ? Colors.white70 : Colors.black87;
+        final dateColor = isDark ? Colors.white : Colors.black87;
 
-                  // RIGHT SIDE: Debug + Done (Edit removed from here)
-                  Row(
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Row(
                     children: [
-                      /*
                       IconButton(
-                        icon: Icon(Icons.bug_report, color: Colors.grey[400]),
-                        onPressed: () => setState(() => _showDebugButtons = !_showDebugButtons),
+                        icon: Icon(Icons.edit, color: iconColor),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditHabitScreen(habit: currentHabit),
+                            ),
+                          );
+                          // Handle deletion return
+                          if (result == 'DELETED' && mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
                       ),
-                      */
-                      // The "Done" button acts as the closer now
                       TextButton(
+                        style: TextButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                         onPressed: () => Navigator.pop(context),
                         child: Text(
                           "Back",
@@ -552,231 +412,99 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            if (_showDebugButtons)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
                 ),
-                margin: const EdgeInsets.symmetric(horizontal: _sidePadding),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.grey[800] : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "DEBUG TOOLS",
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[600],
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () =>
-                                _controller.fillYear(_focusedMonth),
-                            child: const Text("Fill"),
+                        const SizedBox(height: 20),
+                        _StatsView(
+                          stats: _controller.stats,
+                          dates: _controller.dates,
+                          color: _currentColor ?? Colors.blue,
+                          readableColor: _readableColor ?? Colors.blue,
+                        ),
+                        const SizedBox(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: _sidePadding, vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.chevron_left, color: iconColor),
+                                onPressed: () => setState(() => _focusedMonth = DateTime.utc(_focusedMonth.year, _focusedMonth.month - 1, 1)),
+                              ),
+                              GestureDetector(
+                                onTap: () => _showYearPicker(currentHabit),
+                                child: Row(
+                                  children: [
+                                    Text(DateFormat.yMMMM().format(_focusedMonth), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: dateColor)),
+                                    const SizedBox(width: 4),
+                                    Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+                                  ],
+                                ),
+                              ),
+                              Builder(
+                                builder: (context) {
+                                  final isFuture = _focusedMonth.year == DateTime.now().year && _focusedMonth.month == DateTime.now().month;
+                                  return IconButton(
+                                    icon: Icon(Icons.chevron_right, color: isFuture ? Colors.transparent : iconColor),
+                                    onPressed: isFuture ? null : () => setState(() => _focusedMonth = DateTime.utc(_focusedMonth.year, _focusedMonth.month + 1, 1)),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () =>
-                                _controller.addRandomDates(_focusedMonth),
-                            child: const Text("Rnd"),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: _sidePadding),
+                          child: ValueListenableBuilder<HashSet<int>>(
+                            valueListenable: _controller.dates,
+                            builder: (context, dateSet, _) {
+                              return TableCalendar(
+                                firstDay: DateTime.utc(2000, 1, 1),
+                                lastDay: DateTime.now(),
+                                focusedDay: _focusedMonth,
+                                currentDay: DateTime.now(),
+                                headerVisible: false,
+                                startingDayOfWeek: StartingDayOfWeek.monday,
+                                daysOfWeekStyle: const DaysOfWeekStyle(
+                                  weekdayStyle: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600),
+                                  weekendStyle: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600),
+                                ),
+                                onPageChanged: (focusedDay) => setState(() => _focusedMonth = focusedDay),
+                                calendarBuilders: CalendarBuilders(
+                                  defaultBuilder: (context, date, _) => _buildCalendarCell(date, dateSet, isToday: false),
+                                  todayBuilder: (context, date, _) => _buildCalendarCell(date, dateSet, isToday: true),
+                                  outsideBuilder: (context, date, _) => const SizedBox.shrink(),
+                                ),
+                                onDaySelected: (selectedDay, _) => _controller.toggle(DateTime.utc(selectedDay.year, selectedDay.month, selectedDay.day)),
+                              );
+                            },
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: _controller.clearAllDates,
-                            child: const Text("Clr"),
-                          ),
-                        ),
+                        const SizedBox(height: 40),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    _StatsView(
-                      stats: _controller.stats,
-                      dates: _controller.dates,
-                      color: _currentColor,
-                      readableColor: _readableColor,
-                    ),
-                    const SizedBox(height: 20),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: _sidePadding,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.chevron_left, color: iconColor),
-                            onPressed: () {
-                              setState(() {
-                                _focusedMonth = DateTime.utc(
-                                  _focusedMonth.year,
-                                  _focusedMonth.month - 1,
-                                  1,
-                                );
-                              });
-                            },
-                          ),
-                          GestureDetector(
-                            onTap: _showYearPicker,
-                            child: Row(
-                              children: [
-                                Text(
-                                  DateFormat.yMMMM().format(_focusedMonth),
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: dateColor,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.arrow_drop_down,
-                                  color: Colors.grey[600],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Builder(builder: (context) {
-                            final isFuture =
-                                _focusedMonth.year == DateTime.now().year &&
-                                    _focusedMonth.month == DateTime.now().month;
-                            return IconButton(
-                              icon: Icon(Icons.chevron_right,
-                                  color:
-                                      isFuture ? Colors.transparent : iconColor),
-                              onPressed: isFuture
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _focusedMonth = DateTime.utc(
-                                          _focusedMonth.year,
-                                          _focusedMonth.month + 1,
-                                          1,
-                                        );
-                                      });
-                                    },
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: _sidePadding,
-                      ),
-                      child: ValueListenableBuilder<HashSet<int>>(
-                        valueListenable: _controller.dates,
-                        builder: (context, dateSet, _) {
-                          return TableCalendar(
-                            firstDay: DateTime.utc(2000, 1, 1),
-                            lastDay: DateTime.now(),
-                            focusedDay: _focusedMonth,
-                            currentDay: DateTime.now(),
-                            headerVisible: false,
-                            startingDayOfWeek: StartingDayOfWeek.monday,
-                            daysOfWeekStyle: const DaysOfWeekStyle(
-                              weekdayStyle: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              weekendStyle: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-
-                            onPageChanged: (focusedDay) {
-                              _onMonthChanged(focusedDay);
-                            },
-
-                            calendarBuilders: CalendarBuilders(
-                              defaultBuilder: (context, date, focusedDay) {
-                                return _buildCalendarCell(
-                                  date,
-                                  dateSet,
-                                  isToday: false,
-                                );
-                              },
-                              todayBuilder: (context, date, focusedDay) {
-                                return _buildCalendarCell(
-                                  date,
-                                  dateSet,
-                                  isToday: true,
-                                );
-                              },
-                              outsideBuilder: (context, date, focusedDay) {
-                                return const SizedBox.shrink();
-                              },
-                            ),
-
-                            onDaySelected: (selectedDay, focusedDay) {
-                              final safeDate = DateTime.utc(
-                                selectedDay.year,
-                                selectedDay.month,
-                                selectedDay.day,
-                              );
-                              _controller.toggle(safeDate);
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildCalendarCell(
-    DateTime date,
-    HashSet<int> dateSet, {
-    required bool isToday,
-  }) {
+  Widget _buildCalendarCell(DateTime date, HashSet<int> dateSet, {required bool isToday}) {
     final dateInt = date.year * 10000 + date.month * 100 + date.day;
     final isCompleted = dateSet.contains(dateInt);
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     Color textColor;
     if (isCompleted) {
-      textColor = (_activeColor.computeLuminance() > 0.5
-          ? Colors.black
-          : Colors.white);
+      textColor = ((_activeColor ?? Colors.blue).computeLuminance() > 0.5 ? Colors.black : Colors.white);
     } else {
       textColor = isDark ? Colors.grey[400]! : Colors.grey[700]!;
     }
@@ -788,14 +516,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         decoration: BoxDecoration(
           color: isCompleted ? _activeColor : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: (isToday && !isCompleted)
-              ? Border.all(color: _readableColor, width: 2)
-              : null,
+          border: (isToday && !isCompleted) ? Border.all(color: _readableColor ?? Colors.blue, width: 2) : null,
         ),
-        child: Text(
-          "${date.day}",
-          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-        ),
+        child: Text("${date.day}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -939,8 +662,10 @@ class _StatsViewState extends State<_StatsView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgOpacity = isDark ? 0.15 : 0.08;
-    // FIX: Make solid
-    final bgColor = Color.alphaBlend(widget.color.withOpacity(bgOpacity), colorScheme.surface);
+    final bgColor = Color.alphaBlend(
+      widget.color.withOpacity(bgOpacity),
+      colorScheme.surface,
+    );
     final trackColor = isDark ? Colors.grey[800] : Colors.grey[200];
 
     return Container(
@@ -967,7 +692,10 @@ class _StatsViewState extends State<_StatsView> {
               ),
               Text(
                 "Last 4 Months",
-                style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -1049,8 +777,10 @@ class _StatsViewState extends State<_StatsView> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgOpacity = isDark ? 0.15 : 0.08;
-    // FIX: Make solid
-    final bgColor = Color.alphaBlend(widget.color.withOpacity(bgOpacity), colorScheme.surface);
+    final bgColor = Color.alphaBlend(
+      widget.color.withOpacity(bgOpacity),
+      colorScheme.surface,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -1126,8 +856,10 @@ class _StatsViewState extends State<_StatsView> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgOpacity = isDark ? 0.15 : 0.08;
-    // FIX: Make solid
-    final bgColor = Color.alphaBlend(widget.color.withOpacity(bgOpacity), colorScheme.surface);
+    final bgColor = Color.alphaBlend(
+      widget.color.withOpacity(bgOpacity),
+      colorScheme.surface,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -1181,7 +913,10 @@ class _StatsViewState extends State<_StatsView> {
               color: colorScheme.onSurface,
             ),
           ),
-          Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          ),
         ],
       ),
     );
