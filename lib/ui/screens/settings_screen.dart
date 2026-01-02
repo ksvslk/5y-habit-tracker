@@ -68,7 +68,7 @@ class SettingsScreen extends ConsumerWidget {
                     : const Icon(Icons.chevron_right),
                 onTap: () {
                   if (isPro) {
-                    _showSubscriptionDetailsDialog(context, ref, colorScheme);
+                   null;
                   } else {
                     RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
                   }
@@ -212,69 +212,5 @@ class SettingsScreen extends ConsumerWidget {
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     final minute = dt.minute.toString().padLeft(2, '0');
     return "$hour:$minute $period";
-  }
-
-  void _showSubscriptionDetailsDialog(BuildContext context, WidgetRef ref, ColorScheme colorScheme) {
-    final customerInfoAsync = ref.watch(customerInfoProvider);
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.workspace_premium, color: Colors.amber),
-            const SizedBox(width: 8),
-            const Text('5Y Pro Active'),
-          ],
-        ),
-        content: customerInfoAsync.when(
-          loading: () => const Text("Loading details..."), // Minimal text indicator for dialog
-          error: (err, stack) => const Text('Error loading subscription details'),
-          data: (customerInfo) {
-            if (customerInfo == null) {
-              return const Text('No subscription information available');
-            }
-
-            final service = ref.read(subscriptionServiceProvider);
-            final expiryDateString = service.getExpiryDate(customerInfo);
-            final willRenew = service.willRenew(customerInfo);
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Thank you for supporting 5Y Habit Tracker!'),
-                const SizedBox(height: 16),
-                if (expiryDateString != null) ...[
-                  Text(
-                    willRenew
-                        ? 'Renews on: $expiryDateString'
-                        : 'Expires on: $expiryDateString',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                Text(
-                  'Status: ${willRenew ? "Active (Auto-renew)" : "Active (Won\'t renew)"}',
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
   }
 }

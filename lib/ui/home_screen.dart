@@ -7,6 +7,7 @@ import 'package:fiveyear/ui/screens/add_habit_screen.dart';
 import 'package:fiveyear/ui/screens/chat_screen.dart';
 import 'package:fiveyear/ui/screens/settings_screen.dart';
 import 'package:fiveyear/ui/widgets/onboarding_overlay.dart';
+import 'package:fiveyear/ui/widgets/first_launch_dialog.dart';
 import 'package:fiveyear/ui/widgets/habit_card.dart';
 import 'package:fiveyear/ui/widgets/habit_card_shimmer.dart';
 import 'package:flutter/material.dart';
@@ -33,14 +34,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // LOGIC TO FINISH ONBOARDING
   Future<void> _completeOnboarding() async {
-    final repo = ref.read(appSettingsRepositoryProvider);
+    if (!mounted) return;
 
-    // 1. Mark as seen in Database
-    await repo.finalizeOnboarding(false, null);
+    // 1. Show the dialog
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const FirstLaunchDialog(),
+    );
 
-    // 2. Trigger RevenueCat Paywall
-    await RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
-    print("Onboarding Complete - Show Paywall Now");
+    // 2. Wait for the dialog dismissal animation to finish
+    // A small delay (300ms is standard for Material transitions) or post-frame callback
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (mounted) {
+      await RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
+    }
   }
 
   @override
@@ -48,14 +57,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Watch providers
     final settingsAsync = ref.watch(appSettingsProvider);
     final habitsAsync = ref.watch(habitsProvider);
-    
+
     // NEW: Watch subscription status
     final subscriptionAsync = ref.watch(subscriptionStatusProvider);
-    final isPro = subscriptionAsync.value ?? false; 
+    final isPro = subscriptionAsync.value ?? false;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = Theme.of(context).colorScheme.surface;
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     // Safely determine if we should show the overlay.
     final bool showOnboarding = settingsAsync.maybeWhen(
@@ -132,8 +142,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // LOGIC FIX: Gate the Habit List behind Settings
               // -------------------------------------------------------------
               settingsAsync.when(
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (err, stack) => SliverToBoxAdapter(child: Text('Error: $err')),
+                loading: () =>
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                error: (err, stack) =>
+                    SliverToBoxAdapter(child: Text('Error: $err')),
                 data: (settings) {
                   if (settings.isFirstLaunch) {
                     return const SliverToBoxAdapter(child: SizedBox.shrink());
@@ -144,9 +156,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return SliverPadding(
                         padding: const EdgeInsets.fromLTRB(20, 10, 20, 120),
                         sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate((context, index) {
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
                             return isLandscape
-                                ? const SizedBox(width: 320, child: HabitCardShimmer())
+                                ? const SizedBox(
+                                    width: 320,
+                                    child: HabitCardShimmer(),
+                                  )
                                 : const HabitCardShimmer();
                           }, childCount: 4),
                         ),
@@ -160,7 +178,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           !_hasScrolled &&
                           habits.isNotEmpty) {
                         final targetId = _pendingScrollToId!;
-                        final index = habits.indexWhere((h) => h.id == targetId);
+                        final index = habits.indexWhere(
+                          (h) => h.id == targetId,
+                        );
 
                         if (index != -1) {
                           _hasScrolled = true;
@@ -246,16 +266,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ? const EdgeInsets.fromLTRB(20, 20, 100, 20)
                             : const EdgeInsets.fromLTRB(20, 10, 20, 120),
                         sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate((context, index) {
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
                             final habit = habits[index];
-                            
+
                             // NEW: Check lock status
                             // Lock if user is NOT pro AND index is 2 or greater (0, 1 are free)
                             final bool isLocked = !isPro && index >= 2;
 
                             Widget card = isLandscape
                                 ? SizedBox(
-                                    width: 320, child: HabitCard(habit: habit))
+                                    width: 320,
+                                    child: HabitCard(habit: habit),
+                                  )
                                 : HabitCard(habit: habit);
 
                             // NEW: Wrap locked cards with overlay
@@ -295,10 +320,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       MaterialPageRoute(builder: (_) => const ChatScreen()),
                     );
                   },
-                  backgroundColor:
-                      Theme.of(context).colorScheme.secondaryContainer,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.onSecondaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSecondaryContainer,
                   child: const Icon(Icons.try_sms_star),
                 ),
                 FloatingActionButton.large(
@@ -306,11 +333,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onPressed: () async {
                     // NEW: Check limits before adding
                     final currentHabits = habitsAsync.valueOrNull ?? [];
-                    
+
                     // If not Pro and trying to add 3rd habit (index 2+), show paywall
                     if (!isPro && currentHabits.length >= 2) {
-                       await RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
-                       return;
+                      await RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
+                      return;
                     }
 
                     final newHabitId = await Navigator.of(context).push<String>(
@@ -323,10 +350,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       });
                     }
                   },
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.onPrimaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
                   child: const Icon(Icons.add),
                 ),
               ],
@@ -339,9 +368,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // ---------------------------------------------
         if (showOnboarding)
           Positioned.fill(
-            child: OnboardingOverlay(
-              onComplete: _completeOnboarding,
-            ),
+            child: OnboardingOverlay(onComplete: _completeOnboarding),
           ),
       ],
     );
@@ -358,26 +385,28 @@ class _LockOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final surfaceContainer = Theme.of(context).colorScheme.surfaceContainer;
     final secondaryContainer = Theme.of(context).colorScheme.secondaryContainer;
-    final onSecondaryContainer = Theme.of(context).colorScheme.onSecondaryContainer;
+    final onSecondaryContainer = Theme.of(
+      context,
+    ).colorScheme.onSecondaryContainer;
     return Stack(
       children: [
         // 1. The original card, non-interactive
-        IgnorePointer(
-          child: child,
-        ),
-        
+        IgnorePointer(child: child),
+
         // 2. The Lock Overlay
         Positioned.fill(
           child: ClipRRect(
             // Approximating standard card radius. Adjust if HabitCard is different.
-            borderRadius: BorderRadius.circular(24), 
+            borderRadius: BorderRadius.circular(24),
             child: GestureDetector(
               onTap: () {
                 // Trigger paywall on tap
                 RevenueCatUI.presentPaywallIfNeeded("5Y Pro");
               },
               child: Container(
-                color: surfaceContainer.withOpacity(0.95), // Semi-transparent dark overlay
+                color: surfaceContainer.withOpacity(
+                  0.95,
+                ), // Semi-transparent dark overlay
                 alignment: Alignment.center,
                 child: Container(
                   padding: const EdgeInsets.all(12),

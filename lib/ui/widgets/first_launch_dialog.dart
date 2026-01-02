@@ -84,9 +84,7 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () {
-            _saveAndClose();
-          },
+          onPressed: _saveAndClose,
           child: const Text('Done'),
         ),
       ],
@@ -106,5 +104,9 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
     await ref
         .read(appSettingsRepositoryProvider)
         .finalizeOnboarding(_enableNotifications, reminderTime);
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }

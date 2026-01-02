@@ -8,12 +8,12 @@ final gemmaServiceProvider = Provider<GemmaService>((ref) => GemmaService());
 
 class GemmaService {
   final _assetService = AssetDeliveryService();
-  static const String _assetPackName = "gemma3_1b_it"; 
+  static const String _assetPackName = "gemma3_1b_it";
   static const String _modelFileName = "model.task";
-  
+
   InferenceModel? _inferenceModel;
   InferenceChat? _activeChatSession;
-  
+
   bool _isResetting = false;
   bool _isInitialized = false;
 
@@ -28,7 +28,9 @@ class GemmaService {
   }
 
   Future<bool> isModelDownloaded() async {
-    final packPath = await _assetService.getAssetPackPathIfExists(_assetPackName);
+    final packPath = await _assetService.getAssetPackPathIfExists(
+      _assetPackName,
+    );
     if (packPath == null) return false;
     return File("$packPath/$_modelFileName").exists();
   }
@@ -58,15 +60,19 @@ class GemmaService {
   }
 
   Future<void> loadEngine() async {
-    final packPath = await _assetService.getAssetPackPathIfExists(_assetPackName);
+    final packPath = await _assetService.getAssetPackPathIfExists(
+      _assetPackName,
+    );
     if (packPath == null) throw Exception("Model missing");
     final fullPath = "$packPath/$_modelFileName";
-    
+
     try {
-      await FlutterGemma.installModel(modelType: ModelType.gemmaIt).fromFile(fullPath).install();
+      await FlutterGemma.installModel(
+        modelType: ModelType.gemmaIt,
+      ).fromFile(fullPath).install();
       _inferenceModel = await FlutterGemma.getActiveModel(
-        maxTokens: 2048, 
-        preferredBackend: PreferredBackend.gpu
+        maxTokens: 2048,
+        preferredBackend: PreferredBackend.gpu,
       );
       print("✅ Engine loaded");
     } catch (e) {
@@ -81,10 +87,12 @@ class GemmaService {
       print("⚠️ Already resetting, skipping...");
       return;
     }
-    
+
     _isResetting = true;
-    print("🧹 Resetting chat session with ${history?.length ?? 0} historical messages...");
-    
+    print(
+      "🧹 Resetting chat session with ${history?.length ?? 0} historical messages...",
+    );
+
     try {
       // STEP 1: Stop any ongoing generation
       if (_activeChatSession != null) {
@@ -95,7 +103,7 @@ class GemmaService {
           print("   ⚠️ Stop generation warning: $e");
         }
       }
-      
+
       // STEP 2: Clear the chat history if session exists
       if (_activeChatSession != null) {
         try {
@@ -105,13 +113,13 @@ class GemmaService {
           _activeChatSession = null;
         }
       }
-      
+
       // STEP 3: Create session if needed
       if (_activeChatSession == null) {
         if (_inferenceModel == null) {
           await loadEngine();
         }
-        
+
         // createChat does NOT take history param
         _activeChatSession = await _inferenceModel!.createChat(
           temperature: 0.7,
@@ -119,16 +127,14 @@ class GemmaService {
         );
       }
 
-      // STEP 4: Manually feed history into the session
-      if (history != null && history.isNotEmpty) {
-        print("   4️⃣ Feeding ${history.length} messages into context...");
-        for (final msg in history) {
-          // addQueryChunk adds to context without generating a response
-          await _activeChatSession!.addQueryChunk(msg);
-        }
-        print("   ✅ Context restored");
-      }
-      
+      // STEP 4: Add preprompt
+      await _activeChatSession!.addQueryChunk(
+        Message.text(
+          text:
+              "You are a support companion. Please answer in 4-5 sentences max.",
+          isUser: false,
+        ),
+      );
     } catch (e) {
       print("❌ Reset failed: $e");
       _activeChatSession = null;
@@ -146,19 +152,19 @@ class GemmaService {
     if (_activeChatSession == null) {
       await performSecureReset();
     }
-    
+
     bool hasYielded = false;
-    
+
     try {
-      // NOTE: We do NOT add the system prompt here anymore because 
+      // NOTE: We do NOT add the system prompt here anymore because
       // it is now injected via the 'history' parameter in performSecureReset
-      
+
       await _activeChatSession!.addQueryChunk(
-        Message.text(text: "$input", isUser: true)
+        Message.text(text: "$input", isUser: true),
       );
-      
+
       final stream = _activeChatSession!.generateChatResponseAsync();
-      
+
       await for (final chunk in stream) {
         if (chunk is TextResponse && chunk.token.isNotEmpty) {
           hasYielded = true;
@@ -167,9 +173,8 @@ class GemmaService {
       }
 
       if (!hasYielded) {
-         throw Exception("Context Full");
+        throw Exception("Context Full");
       }
-
     } catch (e) {
       print("❌ Stream Error: $e");
       rethrow;

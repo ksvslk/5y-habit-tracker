@@ -9,6 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart'; // REQUIRED for Message class
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Module-level flag to track if history has been cleared in the current app session.
+bool _hasClearedHistoryThisSession = false;
+
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   final dbFuture = ref.watch(isarDatabaseProvider.future);
   return ChatRepository(dbFuture);
@@ -26,10 +29,15 @@ final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>(
 );
 
 class ChatMessage {
+  final String id; // Unique ID for ValueKey performance
   final ValueNotifier<String> content;
   final bool isUser;
+
   ChatMessage({required String text, required this.isUser})
-    : content = ValueNotifier(text);
+      // Use timestamp + "u" or "a" to ensure uniqueness even if sent in the same ms
+      : id = "${DateTime.now().millisecondsSinceEpoch}-${isUser ? 'u' : 'a'}",
+        content = ValueNotifier(text);
+
   void append(String token) => content.value += token;
 }
 
@@ -62,8 +70,8 @@ class ChatState {
     this.error,
   });
 
-  double get memoryPercentage => usedTokens / maxTokens;
-  bool get isMemoryFull => usedTokens >= maxTokens;
+double get memoryPercentage => (usedTokens / maxTokens).clamp(0.0, 1.0);
+bool get isMemoryFull => usedTokens >= maxTokens;
 
   ChatState copyWith({
     List<ChatMessage>? messages,
@@ -121,27 +129,45 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   Future<void> _initialize() async {
+    // Set initial loading state immediately, with empty messages
+    state = state.copyWith(isCheckingForModel: true, messages: []);
+
+    // Listen to real-time subscription changes
+    _proStatusSubscription =
+        _subscriptionService.subscriptionStatusStream.listen((isPro) {
+      if (isPro && state.isDailyLimitReached) {
+        state = state.copyWith(isDailyLimitReached: false);
+      }
+    });
+
+    // Initial check
+    await _checkDailyLimit();
+
+    // Asynchronously load history and boot AI without blocking the UI
+    _loadHistoryAndBootAi();
+  }
+
+  Future<void> _loadHistoryAndBootAi() async {
+    // Clear history only on the first session initialization of the app lifecycle.
+    if (!_hasClearedHistoryThisSession) {
+      await _repo.clearHistory();
+      _hasClearedHistoryThisSession = true;
+    }
+
     final history = await _repo.getHistory();
     final msgs = history
         .map((e) => ChatMessage(text: e.text ?? "", isUser: e.isUser ?? false))
         .toList();
 
-    // Listen to real-time subscription changes
-    _proStatusSubscription = _subscriptionService.subscriptionStatusStream.listen((isPro) {
-      if (isPro && state.isDailyLimitReached) {
-        state = state.copyWith(isDailyLimitReached: false);
-      }
-    });
-        
-    // Initial check
-    await _checkDailyLimit();
+    int historicalTokens = 0;
+    for (var msg in msgs) {
+      historicalTokens += (msg.content.value.length / 3.5).ceil();
+    }
 
-    state = state.copyWith(
-      messages: msgs,
-      usedTokens: 0, 
-      isCheckingForModel: true,
-    );
+    // Update state with the loaded messages AND the correct token count
+    state = state.copyWith(messages: msgs, usedTokens: historicalTokens);
 
+    // Proceed to boot the AI engine
     try {
       if (await _service.isModelDownloaded()) {
         state = state.copyWith(isCheckingForModel: false);
@@ -237,141 +263,286 @@ class ChatController extends StateNotifier<ChatState> {
     if (state.error != null) state = state.copyWith(error: null);
   }
 
-  Future<bool> sendMessage(String text) async {
-    if (text.trim().isEmpty || _isGenerating || state.isLoadingEngine) return false;
+      Future<bool> sendMessage(String text) async {
 
-    final isLimitReached = await _checkDailyLimit();
-    if (isLimitReached) {
-      return false; 
-    }
+        if (text.trim().isEmpty || _isGenerating || state.isLoadingEngine) return false;
 
-    final userMsg = ChatMessage(text: text, isUser: true);
-    final aiMsg = ChatMessage(text: "", isUser: false);
     
-    _currentAiMessage = aiMsg;
-    _isGenerating = true;
 
-    final inputTokens = (text.length / 3.5).ceil();
+        final isLimitReached = await _checkDailyLimit();
 
-    state = state.copyWith(
-      messages: [aiMsg, userMsg, ...state.messages],
-      isThinking: true,
-      usedTokens: state.usedTokens + inputTokens,
-      error: null,
-    );
+        if (isLimitReached) {
+
+          return false; 
+
+        }
+
     
-    _repo.saveMessage(text, true).ignore(); 
-    
-    await _settingsRepo.incrementTokenUsage(inputTokens);
 
-    _timeoutTimer?.cancel();
-    _timeoutTimer = Timer(const Duration(seconds: 30), () {
-      if (_isGenerating) {
-        print("⏱️ Generation timeout!");
-        _forceStopGeneration();
+        final userMsg = ChatMessage(text: text, isUser: true);
+
+        final aiMsg = ChatMessage(text: "", isUser: false);
+
+        
+
+        _currentAiMessage = aiMsg;
+
+        _isGenerating = true;
+
+    
+
+        final inputTokens = (text.length / 3.5).ceil();
+
+    
+
+        state = state.copyWith(
+
+          messages: [aiMsg, userMsg, ...state.messages],
+
+          isThinking: true,
+
+          usedTokens: state.usedTokens + inputTokens,
+
+          error: null,
+
+        );
+
+        
+
+        _repo.saveMessage(text, true).ignore(); 
+
+        
+
+        await _settingsRepo.incrementTokenUsage(inputTokens);
+
+    
+
+        _timeoutTimer?.cancel();
+
+        _timeoutTimer = Timer(const Duration(seconds: 30), () {
+
+          if (_isGenerating) {
+
+            print("⏱️ Generation timeout!");
+
+            stopGeneration(); // Call the robust stop method
+
+          }
+
+        });
+
+    
+
+        _performGeneration(text, aiMsg);
+
+        return true;
+
       }
-    });
 
-    _performGeneration(text, aiMsg);
-    return true;
-  }
+    
 
-  void _performGeneration(String text, ChatMessage aiMsg) {
-    bool gotAnyTokens = false;
-    int tokensGenerated = 0;
+      void _performGeneration(String text, ChatMessage aiMsg) {
 
-    print("🔵 Starting generation...");
+        bool gotAnyTokens = false;
 
-    try {
-      _chatSubscription = _service.streamResponse(text).listen(
-        (token) {
-          if (!_isGenerating) return;
-          
-          gotAnyTokens = true;
-          tokensGenerated++;
-          aiMsg.append(token);
-          
-          if (tokensGenerated % 10 == 0) {
-            state = state.copyWith(usedTokens: state.usedTokens + 10);
-          }
-        },
-        onDone: () async {
-          if (!_isGenerating) return;
-          
-          print("✅ Generation done. Tokens: $tokensGenerated");
-          _timeoutTimer?.cancel();
-          
-          if (tokensGenerated % 10 != 0) {
-            state = state.copyWith(usedTokens: state.usedTokens + (tokensGenerated % 10));
-          }
-          
-          _isGenerating = false;
-          _currentAiMessage = null;
-          state = state.copyWith(isThinking: false, isStopping: false);
-          
-          if (gotAnyTokens && aiMsg.content.value.trim().isNotEmpty) {
-            _repo.saveMessage(aiMsg.content.value, false);
-            
-            await _settingsRepo.incrementTokenUsage(tokensGenerated);
-            await _checkDailyLimit(); 
-          } else if (!gotAnyTokens) {
-             _handleGenerationFailure(aiMsg);
-             state = state.copyWith(error: "Memory Full. Please clear chat.");
-          }
-        },
-        onError: (e) {
-          if (!_isGenerating) return;
-          print("❌ Generation error: $e");
-          _timeoutTimer?.cancel();
-          _isGenerating = false;
-          _currentAiMessage = null;
-          _handleGenerationFailure(aiMsg);
-          state = state.copyWith(
-            isThinking: false, 
-            isStopping: false,
-            error: "Brain needs a rest. Please clear chat."
+        int tokensGenerated = 0;
+
+    
+
+        print("🔵 Starting generation...");
+
+    
+
+        try {
+
+          _chatSubscription = _service.streamResponse(text).listen(
+
+            (token) {
+
+              if (!_isGenerating) return;
+
+              
+
+              gotAnyTokens = true;
+
+              tokensGenerated++;
+
+              aiMsg.append(token);
+
+              
+
+              if (tokensGenerated % 10 == 0) {
+
+                state = state.copyWith(usedTokens: state.usedTokens + 10);
+
+              }
+
+            },
+
+            onDone: () async {
+
+              if (!_isGenerating) return;
+
+              
+
+              print("✅ Generation done. Tokens: $tokensGenerated");
+
+              _timeoutTimer?.cancel();
+
+              
+
+              if (tokensGenerated % 10 != 0) {
+
+                state = state.copyWith(usedTokens: state.usedTokens + (tokensGenerated % 10));
+
+              }
+
+              
+
+              _isGenerating = false;
+
+              _currentAiMessage = null;
+
+              state = state.copyWith(isThinking: false, isStopping: false);
+
+              
+
+              if (gotAnyTokens && aiMsg.content.value.trim().isNotEmpty) {
+
+                _repo.saveMessage(aiMsg.content.value, false).ignore();
+
+                
+
+                _settingsRepo.incrementTokenUsage(tokensGenerated).ignore();
+
+                _checkDailyLimit().ignore(); 
+
+              } else if (!gotAnyTokens) {
+
+                 _handleGenerationFailure(aiMsg);
+
+                 state = state.copyWith(error: "Memory Full. Please clear chat.");
+
+              }
+
+            },
+
+            onError: (e) {
+
+              if (!_isGenerating) return;
+
+              print("❌ Generation error: $e");
+
+              _timeoutTimer?.cancel();
+
+              _isGenerating = false;
+
+              _currentAiMessage = null;
+
+              _handleGenerationFailure(aiMsg);
+
+              state = state.copyWith(
+
+                isThinking: false, 
+
+                isStopping: false,
+
+                error: "Brain needs a rest. Please clear chat."
+
+              );
+
+            },
+
           );
-        },
-      );
-    } catch (e) {
-      _isGenerating = false;
-      _currentAiMessage = null;
-      _handleGenerationFailure(aiMsg);
-      state = state.copyWith(
-        isThinking: false,
-        isStopping: false,
-        error: "Connection error."
-      );
-    }
-  }
 
-  void _handleGenerationFailure(ChatMessage aiMsg) {
-    final currentMsgs = List<ChatMessage>.from(state.messages);
-    if (aiMsg.content.value.trim().isEmpty && currentMsgs.contains(aiMsg)) {
-      currentMsgs.remove(aiMsg);
-      state = state.copyWith(messages: currentMsgs);
-    }
-  }
+        } catch (e) {
 
-  void _forceStopGeneration() {
-    _isGenerating = false;
-    _timeoutTimer?.cancel();
-    _chatSubscription?.cancel();
-    if (_currentAiMessage != null) _handleGenerationFailure(_currentAiMessage!);
-    _currentAiMessage = null;
-    state = state.copyWith(isThinking: false, isStopping: false);
-    _service.stopGeneration().catchError((e) {});
-  }
+          _isGenerating = false;
 
-  Future<void> stopGeneration() async {
-    if (!_isGenerating) return;
-    state = state.copyWith(isStopping: true);
-    final stopFuture = Future.microtask(() => _forceStopGeneration());
-    await stopFuture.timeout(const Duration(seconds: 2), onTimeout: _forceStopGeneration);
-  }
+          _currentAiMessage = null;
+
+          _handleGenerationFailure(aiMsg);
+
+          state = state.copyWith(
+
+            isThinking: false,
+
+            isStopping: false,
+
+            error: "Connection error."
+
+          );
+
+        }
+
+      }
+
+    
+
+      void _handleGenerationFailure(ChatMessage aiMsg) {
+
+        final currentMsgs = List<ChatMessage>.from(state.messages);
+
+        if (aiMsg.content.value.trim().isEmpty && currentMsgs.contains(aiMsg)) {
+
+          currentMsgs.remove(aiMsg);
+
+          state = state.copyWith(messages: currentMsgs);
+
+        }
+
+      }
+
+    
+
+      Future<void> _forceStopGeneration() async {
+
+        _isGenerating = false;
+
+        _timeoutTimer?.cancel();
+
+        _chatSubscription?.cancel();
+
+        if (_currentAiMessage != null) _handleGenerationFailure(_currentAiMessage!);
+
+        _currentAiMessage = null;
+
+        state = state.copyWith(isThinking: false, isStopping: false);
+
+        await _service.stopGeneration().catchError((e) {});
+
+      }
+
+    
+
+      Future<void> stopGeneration() async {
+
+        if (!_isGenerating || state.isStopping) return;
+
+        state = state.copyWith(isStopping: true);
+
+        try {
+
+          await _forceStopGeneration().timeout(const Duration(seconds: 3));
+
+        } catch (e) {
+
+          print("⚠️ Stop generation timed out or failed: $e");
+
+          // If stop fails, ensure we reset the state regardless to avoid getting stuck.
+
+          _isGenerating = false;
+
+          _currentAiMessage = null;
+
+          state = state.copyWith(isThinking: false, isStopping: false);
+
+        }
+
+      }
 
   Future<void> clearMemory() async {
-    if (_isGenerating) _forceStopGeneration();
+    if (_isGenerating) await _forceStopGeneration();
     state = state.copyWith(isLoadingEngine: true);
     await _repo.clearHistory();
     try {

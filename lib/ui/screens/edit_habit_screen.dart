@@ -385,32 +385,46 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    // Theme Name
-                                    Opacity(
-                                      opacity: isLocked ? 0.3 : 1.0,
-                                      child: Text(
-                                        data['name'],
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                          color: isSelected
-                                              ? contrastColor
-                                              : colorScheme.onSurface,
+                                child: Opacity(
+                                  opacity: isLocked ? 0.6 : 1.0,
+                                  child: Row(
+                                    mainAxisAlignment: isLocked
+                                        ? MainAxisAlignment.start
+                                        : MainAxisAlignment.center,
+                                    children: [
+                                      if (!isLocked)
+                                        Text(
+                                          data['name'],
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                            color: isSelected
+                                                ? contrastColor
+                                                : colorScheme.onSurface,
+                                          ),
+                                          textAlign: TextAlign.center,
                                         ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    // Lock Icon
-                                    if (isLocked)
-                                      Icon(
-                                        Icons.lock_outline,
-                                        size: 18,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                  ],
+                                      if (isLocked) ...[
+                                        Icon(
+                                          Icons.lock_outline,
+                                          size: 20,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            data['name'],
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                              color: colorScheme.onSurface,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ]
+                                    ],
+                                  ),
                                 ),
                               ),
                             );

@@ -141,6 +141,8 @@ class CalendarController {
   Function(HashSet<int>)? onSave;
   bool _isLoaded = false;
 
+  CalendarController();
+
   Future<void> load(List<String> rawData) async {
     if (_isLoaded) return;
     final set = await compute(
@@ -153,6 +155,13 @@ class CalendarController {
   }
 
   void toggle(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime.utc(now.year, now.month, now.day);
+    if (date.isAfter(today)) {
+      HapticFeedback.heavyImpact();
+      return;
+    }
+
     HapticFeedback.lightImpact();
 
     final dateInt = date.year * 10000 + date.month * 100 + date.day;
@@ -173,9 +182,12 @@ class CalendarController {
   }
 
   void fillYear(DateTime focusedMonth) {
+    final now = DateTime.now();
+    if (focusedMonth.year > now.year) {
+      return;
+    }
     HapticFeedback.mediumImpact();
 
-    final now = DateTime.now();
     final targetYear = focusedMonth.year;
     final newSet = HashSet<int>.from(dates.value);
 
@@ -197,8 +209,12 @@ class CalendarController {
   }
 
   void addRandomDates(DateTime focusedMonth) {
-    HapticFeedback.mediumImpact();
     final now = DateTime.now();
+    if (focusedMonth.year > now.year) {
+      return;
+    }
+    HapticFeedback.mediumImpact();
+
     final random = Random();
     final targetYear = focusedMonth.year;
     final newSet = HashSet<int>.from(dates.value);
@@ -647,18 +663,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ],
                             ),
                           ),
-                          IconButton(
-                            icon: Icon(Icons.chevron_right, color: iconColor),
-                            onPressed: () {
-                              setState(() {
-                                _focusedMonth = DateTime.utc(
-                                  _focusedMonth.year,
-                                  _focusedMonth.month + 1,
-                                  1,
-                                );
-                              });
-                            },
-                          ),
+                          Builder(builder: (context) {
+                            final isFuture =
+                                _focusedMonth.year == DateTime.now().year &&
+                                    _focusedMonth.month == DateTime.now().month;
+                            return IconButton(
+                              icon: Icon(Icons.chevron_right,
+                                  color:
+                                      isFuture ? Colors.transparent : iconColor),
+                              onPressed: isFuture
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _focusedMonth = DateTime.utc(
+                                          _focusedMonth.year,
+                                          _focusedMonth.month + 1,
+                                          1,
+                                        );
+                                      });
+                                    },
+                            );
+                          }),
                         ],
                       ),
                     ),
@@ -672,7 +697,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         builder: (context, dateSet, _) {
                           return TableCalendar(
                             firstDay: DateTime.utc(2000, 1, 1),
-                            lastDay: DateTime.utc(2100, 12, 31),
+                            lastDay: DateTime.now(),
                             focusedDay: _focusedMonth,
                             currentDay: DateTime.now(),
                             headerVisible: false,

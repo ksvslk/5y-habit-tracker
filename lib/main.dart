@@ -25,7 +25,6 @@ Future<void> initializeRevenueCat() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   // Initialize Notifications and capture payload if launched from notification
   final container = ProviderContainer();
   final String? initialPayload = await container
