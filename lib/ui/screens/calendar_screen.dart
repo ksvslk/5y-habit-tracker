@@ -222,7 +222,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     int targetYear = widget.initialYear ?? now.year;
     int targetMonth = (targetYear == now.year) ? now.month : 1;
     _focusedMonth = DateTime.utc(targetYear, targetMonth, 1);
-    
+
     _controller = CalendarController();
     _controller.load(widget.habit.completedDays);
     _controller.onSave = _handleSave;
@@ -311,7 +311,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
-                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                   ),
                 ),
               ),
@@ -329,16 +331,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           "$year",
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected 
-                                ? _readableColor 
-                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black),
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? _readableColor
+                                : (Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white70
+                                      : Colors.black),
                           ),
                         ),
                       ),
                       onTap: () {
                         setState(() {
-                          _focusedMonth = DateTime.utc(year, _focusedMonth.month, 1);
+                          _focusedMonth = DateTime.utc(
+                            year,
+                            _focusedMonth.month,
+                            1,
+                          );
                         });
                         Navigator.pop(context);
                       },
@@ -359,7 +370,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final habitsAsync = ref.watch(habitsProvider);
 
     return habitsAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (err, stack) => Scaffold(body: Center(child: Text("Error: $err"))),
       data: (allHabits) {
         // Extract the latest data for this specific habit
@@ -380,9 +392,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Column(
               children: [
                 AppBar(
-                  automaticallyImplyLeading: false, // Disable default back button
+                  automaticallyImplyLeading:
+                      false, // Disable default back button
                   leading: IconButton(
-                    icon: Icon(Icons.edit, color: iconColor), // Existing edit button
+                    icon: Icon(
+                      Icons.edit,
+                      color: iconColor,
+                    ), // Existing edit button
                     onPressed: () async {
                       final result = await Navigator.push(
                         context,
@@ -407,17 +423,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   foregroundColor: Theme.of(context).colorScheme.onSurface,
                   actions: [
                     TextButton(
-                        style: TextButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          "Back",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: _readableColor,
-                          ),
+                      style: TextButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        "Back",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: _readableColor,
                         ),
                       ),
+                    ),
                   ],
                 ),
                 Expanded(
@@ -433,30 +451,69 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         ),
                         const SizedBox(height: 20),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: _sidePadding, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: _sidePadding,
+                            vertical: 8,
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               IconButton(
-                                icon: Icon(Icons.chevron_left, color: iconColor),
-                                onPressed: () => setState(() => _focusedMonth = DateTime.utc(_focusedMonth.year, _focusedMonth.month - 1, 1)),
+                                icon: Icon(
+                                  Icons.chevron_left,
+                                  color: iconColor,
+                                ),
+                                onPressed: () => setState(
+                                  () => _focusedMonth = DateTime.utc(
+                                    _focusedMonth.year,
+                                    _focusedMonth.month - 1,
+                                    1,
+                                  ),
+                                ),
                               ),
                               GestureDetector(
                                 onTap: () => _showYearPicker(currentHabit),
                                 child: Row(
                                   children: [
-                                    Text(DateFormat.yMMMM().format(_focusedMonth), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: dateColor)),
+                                    Text(
+                                      DateFormat.yMMMM().format(_focusedMonth),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: dateColor,
+                                      ),
+                                    ),
                                     const SizedBox(width: 4),
-                                    Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+                                    Icon(
+                                      Icons.arrow_drop_down,
+                                      color: Colors.grey[600],
+                                    ),
                                   ],
                                 ),
                               ),
                               Builder(
                                 builder: (context) {
-                                  final isFuture = _focusedMonth.year == DateTime.now().year && _focusedMonth.month == DateTime.now().month;
+                                  final isFuture =
+                                      _focusedMonth.year ==
+                                          DateTime.now().year &&
+                                      _focusedMonth.month ==
+                                          DateTime.now().month;
                                   return IconButton(
-                                    icon: Icon(Icons.chevron_right, color: isFuture ? Colors.transparent : iconColor),
-                                    onPressed: isFuture ? null : () => setState(() => _focusedMonth = DateTime.utc(_focusedMonth.year, _focusedMonth.month + 1, 1)),
+                                    icon: Icon(
+                                      Icons.chevron_right,
+                                      color: isFuture
+                                          ? Colors.transparent
+                                          : iconColor,
+                                    ),
+                                    onPressed: isFuture
+                                        ? null
+                                        : () => setState(
+                                            () => _focusedMonth = DateTime.utc(
+                                              _focusedMonth.year,
+                                              _focusedMonth.month + 1,
+                                              1,
+                                            ),
+                                          ),
                                   );
                                 },
                               ),
@@ -465,7 +522,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         ),
 
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: _sidePadding),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: _sidePadding,
+                          ),
                           child: ValueListenableBuilder<HashSet<int>>(
                             valueListenable: _controller.dates,
                             builder: (context, dateSet, _) {
@@ -477,16 +536,43 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 headerVisible: false,
                                 startingDayOfWeek: StartingDayOfWeek.monday,
                                 daysOfWeekStyle: const DaysOfWeekStyle(
-                                  weekdayStyle: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600),
-                                  weekendStyle: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600),
+                                  weekdayStyle: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  weekendStyle: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                                onPageChanged: (focusedDay) => setState(() => _focusedMonth = focusedDay),
+                                onPageChanged: (focusedDay) =>
+                                    setState(() => _focusedMonth = focusedDay),
                                 calendarBuilders: CalendarBuilders(
-                                  defaultBuilder: (context, date, _) => _buildCalendarCell(date, dateSet, isToday: false),
-                                  todayBuilder: (context, date, _) => _buildCalendarCell(date, dateSet, isToday: true),
-                                  outsideBuilder: (context, date, _) => const SizedBox.shrink(),
+                                  defaultBuilder: (context, date, _) =>
+                                      _buildCalendarCell(
+                                        date,
+                                        dateSet,
+                                        isToday: false,
+                                      ),
+                                  todayBuilder: (context, date, _) =>
+                                      _buildCalendarCell(
+                                        date,
+                                        dateSet,
+                                        isToday: true,
+                                      ),
+                                  outsideBuilder: (context, date, _) =>
+                                      const SizedBox.shrink(),
                                 ),
-                                onDaySelected: (selectedDay, _) => _controller.toggle(DateTime.utc(selectedDay.year, selectedDay.month, selectedDay.day)),
+                                onDaySelected: (selectedDay, _) =>
+                                    _controller.toggle(
+                                      DateTime.utc(
+                                        selectedDay.year,
+                                        selectedDay.month,
+                                        selectedDay.day,
+                                      ),
+                                    ),
                               );
                             },
                           ),
@@ -504,14 +590,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendarCell(DateTime date, HashSet<int> dateSet, {required bool isToday}) {
+  Widget _buildCalendarCell(
+    DateTime date,
+    HashSet<int> dateSet, {
+    required bool isToday,
+  }) {
     final dateInt = date.year * 10000 + date.month * 100 + date.day;
     final isCompleted = dateSet.contains(dateInt);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     Color textColor;
     if (isCompleted) {
-      textColor = ((_activeColor ?? Colors.blue).computeLuminance() > 0.5 ? Colors.black : Colors.white);
+      textColor = ((_activeColor ?? Colors.blue).computeLuminance() > 0.5
+          ? Colors.black
+          : Colors.white);
     } else {
       textColor = isDark ? Colors.grey[400]! : Colors.grey[700]!;
     }
@@ -523,9 +615,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         decoration: BoxDecoration(
           color: isCompleted ? _activeColor : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: (isToday && !isCompleted) ? Border.all(color: _readableColor ?? Colors.blue, width: 2) : null,
+          border: (isToday && !isCompleted)
+              ? Border.all(color: _readableColor ?? Colors.blue, width: 2)
+              : null,
         ),
-        child: Text("${date.day}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+        child: Text(
+          "${date.day}",
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

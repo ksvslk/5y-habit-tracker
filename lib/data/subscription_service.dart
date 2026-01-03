@@ -22,10 +22,10 @@ final customerInfoProvider = FutureProvider<CustomerInfo?>((ref) async {
 
 class SubscriptionService {
   static const String _entitlementId = '5Y Pro';
-  
+
   // Stream controller for subscription status changes
   final _statusStreamController = StreamController<bool>.broadcast();
-  
+
   Stream<bool> get subscriptionStatusStream => _statusStreamController.stream;
 
   SubscriptionService() {
@@ -72,7 +72,6 @@ class SubscriptionService {
   bool _checkEntitlement(CustomerInfo customerInfo) {
     return customerInfo.entitlements.active.containsKey(_entitlementId);
   }
-
 
   /// Get subscription expiry date if active
   String? getExpiryDate(CustomerInfo customerInfo) {

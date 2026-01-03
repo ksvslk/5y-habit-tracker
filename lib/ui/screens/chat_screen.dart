@@ -118,24 +118,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        automaticallyImplyLeading: false, // Disable default back button
         title: const Text('Private AI'), // Updated title
-        leading: isReady // This will be the "edit button" (delete in this case)
-            ? IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () async {
-                  await notifier.clearMemory();
-                  _showTopSnackbar('Memory cleared.');
-                },
-              )
-            : null, // No leading widget if not ready
         actions: [
-          IconButton( // This will be the "back button"
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
+          if (isReady)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () async {
+                await notifier.clearMemory();
+                _showTopSnackbar('Memory cleared.');
+              },
+            ),
         ],
       ),
       body: Stack(
@@ -523,10 +515,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildEmptyState(bool isDark) {
-    return _buildCenteredMessage(
-      isDark,
-      "Works 100% offline – on-device.\nReflection only. Not medical advice.\nMemory not saved. Clear with trash bin.",
-      title: "Unload Your thoughts",
+    return SingleChildScrollView(
+      shrinkWrap: true,
+      child: _buildCenteredMessage(
+        isDark,
+        "Works 100% offline – on-device.\nReflection only. Not medical advice.\nMemory not saved. Clear with trash bin.",
+        title: "Unload Your thoughts",
+      ),
     );
   }
 

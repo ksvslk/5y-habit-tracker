@@ -1,11 +1,11 @@
 import 'dart:math';
-import 'dart:ui'; 
+import 'dart:ui';
 import 'package:fiveyear/data/entities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/habit_provider.dart';
-import '../../data/theme_colors.dart'; 
+import '../../data/theme_colors.dart';
 
 class DailyCheckInScreen extends ConsumerStatefulWidget {
   const DailyCheckInScreen({super.key});
@@ -18,7 +18,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
   late PageController _pageController;
   int _currentIndex = 0;
   bool _isCompletedView = false;
-  
+
   final List<Habit> _completedSessionHabits = [];
   final List<Habit> _skippedSessionHabits = [];
 
@@ -38,7 +38,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
     try {
       if (themeData.containsKey(habit.theme)) {
         final colors = themeData[habit.theme]['colors'] as List<Color>;
-        if (colors.isNotEmpty) return colors[0]; 
+        if (colors.isNotEmpty) return colors[0];
       }
     } catch (_) {}
     return Color(habit.colorValue);
@@ -48,19 +48,19 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
     final now = DateTime.now();
     final start = DateTime(now.year, 1, 1);
     final dayNum = now.difference(start).inDays;
-    return "${now.year}-$dayNum"; 
+    return "${now.year}-$dayNum";
   }
 
   void _onHabitCompleted(Habit habit) async {
     final currentData = habit.completedDays;
     final today = _getTodayString();
-    
+
     if (!currentData.contains(today)) {
       final newData = List<String>.from(currentData)..add(today);
       ref.read(habitRepositoryProvider).updateHabitDays(habit.id, newData);
       _completedSessionHabits.add(habit);
     }
-    
+
     await Future.delayed(const Duration(milliseconds: 400));
     _next();
   }
@@ -69,12 +69,12 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
     HapticFeedback.selectionClick();
     final currentData = habit.completedDays;
     final today = _getTodayString();
-    
+
     if (currentData.contains(today)) {
       final newData = List<String>.from(currentData)..remove(today);
       ref.read(habitRepositoryProvider).updateHabitDays(habit.id, newData);
     }
-    
+
     _skippedSessionHabits.add(habit);
     _next();
   }
@@ -100,12 +100,18 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
       backgroundColor: colorScheme.surface,
       body: habitsAsync.when(
         data: (habits) {
-          if (habits.isEmpty) return Center(child: Text("No habits found", style: TextStyle(color: colorScheme.onSurface)));
+          if (habits.isEmpty)
+            return Center(
+              child: Text(
+                "No habits found",
+                style: TextStyle(color: colorScheme.onSurface),
+              ),
+            );
 
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
-            child: _isCompletedView 
-                ? _buildSummaryView() 
+            child: _isCompletedView
+                ? _buildSummaryView()
                 : _buildQuestionFlow(habits),
           );
         },
@@ -132,7 +138,10 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(20),
@@ -143,9 +152,9 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
                       "${_currentIndex + 1} / ${habits.length}",
                       key: ValueKey(_currentIndex),
                       style: TextStyle(
-                        fontWeight: FontWeight.bold, 
+                        fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: colorScheme.onSurfaceVariant
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -153,7 +162,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
               ],
             ),
           ),
-          
+
           Expanded(
             child: PageView.builder(
               controller: _pageController,
@@ -177,7 +186,9 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
   Widget _buildSummaryView() {
     final colorScheme = Theme.of(context).colorScheme;
     final total = _completedSessionHabits.length + _skippedSessionHabits.length;
-    final percent = total == 0 ? 0 : (_completedSessionHabits.length / total * 100).toInt();
+    final percent = total == 0
+        ? 0
+        : (_completedSessionHabits.length / total * 100).toInt();
 
     return SafeArea(
       key: const ValueKey('summary'),
@@ -187,32 +198,66 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 40),
-            Text("All Done!", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: colorScheme.onSurface)),
+            Text(
+              "All Done!",
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text("You completed $percent% of your habits.", style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant)),
+            Text(
+              "You completed $percent% of your habits.",
+              style: TextStyle(
+                fontSize: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 32),
             if (_completedSessionHabits.isNotEmpty) ...[
-              Text("COMPLETED", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.green[400], letterSpacing: 1.2)),
+              Text(
+                "COMPLETED",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Colors.green[400],
+                  letterSpacing: 1.2,
+                ),
+              ),
               const SizedBox(height: 16),
               Expanded(
                 child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1.1, crossAxisSpacing: 12, mainAxisSpacing: 12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.1,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
                   itemCount: _completedSessionHabits.length,
-                  itemBuilder: (context, index) => _buildCompletedCard(_completedSessionHabits[index]),
+                  itemBuilder: (context, index) =>
+                      _buildCompletedCard(_completedSessionHabits[index]),
                 ),
               ),
-            ] else const Spacer(),
+            ] else
+              const Spacer(),
             const SizedBox(height: 16),
             SizedBox(
-              width: double.infinity, height: 56,
+              width: double.infinity,
+              height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text("Finish", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "Finish",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -225,16 +270,23 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
   Widget _buildCompletedCard(Habit habit) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = _getHabitColor(habit); 
-    
+    final color = _getHabitColor(habit);
+
     // FIX: Make the background SOLID by blending the tint with the surface color.
     final tintOpacity = isDark ? 0.15 : 0.25;
-    final bgColor = Color.alphaBlend(color.withOpacity(tintOpacity), colorScheme.surface);
-    
-    final borderColor = isDark ? color.withOpacity(0.4) : color.withOpacity(0.6);
-    
+    final bgColor = Color.alphaBlend(
+      color.withOpacity(tintOpacity),
+      colorScheme.surface,
+    );
+
+    final borderColor = isDark
+        ? color.withOpacity(0.4)
+        : color.withOpacity(0.6);
+
     // Determine text color based on background luminance for readability
-    final textColor = bgColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+    final textColor = bgColor.computeLuminance() > 0.5
+        ? Colors.black87
+        : Colors.white;
 
     return Container(
       decoration: BoxDecoration(
@@ -247,24 +299,21 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(8), 
-            decoration: BoxDecoration(
-              color: color, 
-              shape: BoxShape.circle
-            ), 
-            child: const Icon(Icons.check, color: Colors.black87, size: 20)
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: const Icon(Icons.check, color: Colors.black87, size: 20),
           ),
           const SizedBox(height: 12),
           Text(
-            habit.name, 
-            textAlign: TextAlign.center, 
-            maxLines: 2, 
-            overflow: TextOverflow.ellipsis, 
+            habit.name,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 16, 
-              fontWeight: FontWeight.bold, 
-              color: textColor
-            )
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
           ),
         ],
       ),
@@ -291,7 +340,7 @@ class HabitCheckCard extends StatelessWidget {
     try {
       if (themeData.containsKey(habit.theme)) {
         final colors = themeData[habit.theme]['colors'] as List<Color>;
-        if (colors.isNotEmpty) return colors[0]; 
+        if (colors.isNotEmpty) return colors[0];
       }
     } catch (_) {}
     return Color(habit.colorValue);
@@ -300,35 +349,46 @@ class HabitCheckCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Spacer(flex: 2),
-          Text("Did you complete",
-              style: TextStyle(fontSize: 20, color: colorScheme.onSurfaceVariant, letterSpacing: -0.5)),
+          Text(
+            "Did you complete",
+            style: TextStyle(
+              fontSize: 20,
+              color: colorScheme.onSurfaceVariant,
+              letterSpacing: -0.5,
+            ),
+          ),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(
               habit.name,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 36, height: 1.1, fontWeight: FontWeight.w800, color: colorScheme.onSurface, letterSpacing: -1.0),
+              style: TextStyle(
+                fontSize: 36,
+                height: 1.1,
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+                letterSpacing: -1.0,
+              ),
             ),
           ),
           const Spacer(flex: 3),
 
-          AnimatedCheckButton(
-            color: _getHabitColor(),
-            onTap: onYes,
-          ),
-          
+          AnimatedCheckButton(color: _getHabitColor(), onTap: onYes),
+
           const Spacer(flex: 1),
           TextButton(
             onPressed: onNo,
-            style: TextButton.styleFrom(foregroundColor: colorScheme.onSurfaceVariant),
+            style: TextButton.styleFrom(
+              foregroundColor: colorScheme.onSurfaceVariant,
+            ),
             child: const Text("Skip for now", style: TextStyle(fontSize: 16)),
           ),
           const Spacer(flex: 2),
@@ -352,7 +412,8 @@ class AnimatedCheckButton extends StatefulWidget {
   State<AnimatedCheckButton> createState() => _AnimatedCheckButtonState();
 }
 
-class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTickerProviderStateMixin {
+class _AnimatedCheckButtonState extends State<AnimatedCheckButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _checkAnimation;
@@ -367,12 +428,15 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
     );
 
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.6, curve: Curves.ease)),
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.ease),
+      ),
     );
 
     _checkAnimation = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.4, 1.0, curve: Curves.easeOut), 
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
     );
   }
 
@@ -394,22 +458,26 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // --- COLORS ---
-    final idleOpacity = isDark ? 0.05 : 0.2; 
-    final activeOpacity = isDark ? 0.25 : 0.4; 
-    
+    final idleOpacity = isDark ? 0.05 : 0.2;
+    final activeOpacity = isDark ? 0.25 : 0.4;
+
     // FIX: Make button background solid
     final bgColor = Color.alphaBlend(
-      widget.color.withOpacity(_isPressed ? activeOpacity : idleOpacity), 
-      colorScheme.surface
+      widget.color.withOpacity(_isPressed ? activeOpacity : idleOpacity),
+      colorScheme.surface,
     );
-    
+
     final borderOpacity = isDark ? 0.3 : 0.5;
-    final borderColor = _isPressed ? widget.color : widget.color.withOpacity(borderOpacity);
-    
+    final borderColor = _isPressed
+        ? widget.color
+        : widget.color.withOpacity(borderOpacity);
+
     // Contrast check for "YES" text
-    final textStyleColor = bgColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+    final textStyleColor = bgColor.computeLuminance() > 0.5
+        ? Colors.black87
+        : Colors.white;
 
     return GestureDetector(
       onTap: _handleTap,
@@ -417,7 +485,7 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
         height: 260,
-        width: 260, 
+        width: 260,
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(40),
@@ -430,14 +498,14 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
               opacity: _isPressed ? 0.0 : 1.0,
               duration: const Duration(milliseconds: 200),
               child: Padding(
-                padding: const EdgeInsets.only(top: 140), 
+                padding: const EdgeInsets.only(top: 140),
                 child: Text(
                   "YES",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 4,
-                    color: textStyleColor, 
+                    color: textStyleColor,
                   ),
                 ),
               ),
@@ -468,13 +536,13 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
                         height: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: widget.color, 
+                          color: widget.color,
                           boxShadow: [
                             BoxShadow(
                               color: widget.color.withOpacity(0.4),
                               blurRadius: 20,
                               spreadRadius: 5,
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -485,7 +553,7 @@ class _AnimatedCheckButtonState extends State<AnimatedCheckButton> with SingleTi
                   size: const Size(100, 100),
                   painter: CheckmarkPainter(
                     progress: _checkAnimation,
-                    color: Colors.black87, 
+                    color: Colors.black87,
                   ),
                 ),
               ],
@@ -501,7 +569,8 @@ class CheckmarkPainter extends CustomPainter {
   final Animation<double> progress;
   final Color color;
 
-  CheckmarkPainter({required this.progress, required this.color}) : super(repaint: progress);
+  CheckmarkPainter({required this.progress, required this.color})
+    : super(repaint: progress);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -509,7 +578,7 @@ class CheckmarkPainter extends CustomPainter {
 
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 8 
+      ..strokeWidth = 8
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;

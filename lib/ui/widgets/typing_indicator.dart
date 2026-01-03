@@ -52,7 +52,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
                 // Split into UP (0.0-0.25) and DOWN (0.25-0.5)
                 if (t < 0.25) {
                   // GOING UP: Fast -> Slow
-                  double progress = t * 4.0; 
+                  double progress = t * 4.0;
                   offsetY = Curves.easeOutCubic.transform(progress) * -8;
                 } else {
                   // GOING DOWN: Slow -> Fast

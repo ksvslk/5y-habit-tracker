@@ -12,11 +12,11 @@ class OnboardingOverlay extends StatefulWidget {
 class _OnboardingOverlayState extends State<OnboardingOverlay> {
   int _currentIndex = 0;
 
-final List<String> _onboardingSteps = [
-  "Greatness is just doing the basics",
-  "Over and over again",
-  "Chop wood, carry water"
-];
+  final List<String> _onboardingSteps = [
+    "Greatness is just doing the basics",
+    "Over and over again",
+    "Chop wood, carry water",
+  ];
 
   void _handleTap() {
     if (_currentIndex < _onboardingSteps.length - 1) {
@@ -42,7 +42,7 @@ final List<String> _onboardingSteps = [
         // 2. Make the background highlight (hold state) barely visible
         highlightColor: colorScheme.onSurface.withOpacity(0.02),
         // 3. Use InkRipple for a smoother, less "jarring" expansion animation
-        splashFactory: InkRipple.splashFactory, 
+        splashFactory: InkRipple.splashFactory,
         child: SizedBox.expand(
           // SizedBox.expand ensures the InkWell covers the entire screen,
           // not just the area the text occupies.
@@ -59,17 +59,17 @@ final List<String> _onboardingSteps = [
                       switchOutCurve: Curves.easeInQuart,
                       transitionBuilder:
                           (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.0, 0.05),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0.0, 0.05),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
                       child: Text(
                         _onboardingSteps[_currentIndex],
                         key: ValueKey<int>(_currentIndex),

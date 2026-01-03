@@ -7,7 +7,7 @@ class MosaicPainter extends CustomPainter {
   final Color borderColor;
 
   static const int cols = 20;
-  static const int rows = 19; 
+  static const int rows = 19;
   static const int totalDays = 365;
 
   MosaicPainter({
@@ -30,23 +30,24 @@ class MosaicPainter extends CustomPainter {
 
     // NEW: Paint for the Outer Edge
     final Paint outerBorderPaint = Paint()
-      ..color = borderColor // Or make this darker/thicker if you want
+      ..color =
+          borderColor // Or make this darker/thicker if you want
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.0; // <--- THICKER OUTER EDGE
 
     final double cellWidth = size.width / cols;
     final double cellHeight = size.height / rows;
-    
+
     final Set<String> completedSet = completedDays.toSet();
 
     // 1. Draw the cells and inner grid
     for (int i = 0; i < totalDays; i++) {
       final String key = "$year-$i";
-      if (completedSet.contains(key)) continue; 
+      if (completedSet.contains(key)) continue;
 
       int row = i ~/ cols;
       int col = i % cols;
-      
+
       double width = cellWidth;
       if (i == totalDays - 1) {
         int itemsInLastRow = totalDays % cols;
@@ -55,7 +56,12 @@ class MosaicPainter extends CustomPainter {
         width = cellWidth * span;
       }
 
-      Rect cellRect = Rect.fromLTWH(col * cellWidth, row * cellHeight, width, cellHeight);
+      Rect cellRect = Rect.fromLTWH(
+        col * cellWidth,
+        row * cellHeight,
+        width,
+        cellHeight,
+      );
 
       canvas.drawRect(cellRect, fillPaint);
       canvas.drawRect(cellRect, innerBorderPaint);
@@ -63,14 +69,19 @@ class MosaicPainter extends CustomPainter {
 
     // 2. Draw the Outer Border around the whole thing
     // We deflate by 1.5 (half of 3.0) to ensure the thick line isn't clipped
-    final Rect outerRect = Rect.fromLTWH(0, 0, size.width, size.height).deflate(0);
+    final Rect outerRect = Rect.fromLTWH(
+      0,
+      0,
+      size.width,
+      size.height,
+    ).deflate(0);
     canvas.drawRect(outerRect, outerBorderPaint);
   }
 
   @override
   bool shouldRepaint(covariant MosaicPainter oldDelegate) {
-    return oldDelegate.completedDays.length != completedDays.length || 
-           oldDelegate.year != year || 
-           oldDelegate.fillColor != fillColor;
+    return oldDelegate.completedDays.length != completedDays.length ||
+        oldDelegate.year != year ||
+        oldDelegate.fillColor != fillColor;
   }
 }

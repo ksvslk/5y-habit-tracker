@@ -11,7 +11,10 @@ class ChatRepository {
 
   /// Get all messages sorted by newest first
   Future<List<ChatEntity>> getHistory() async {
-    final query = _box.query().order(ChatEntity_.timestamp, flags: Order.descending).build();
+    final query = _box
+        .query()
+        .order(ChatEntity_.timestamp, flags: Order.descending)
+        .build();
     final results = query.find();
     query.close();
     return results;

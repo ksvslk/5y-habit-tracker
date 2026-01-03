@@ -128,7 +128,9 @@ class _HabitCardState extends ConsumerState<HabitCard> {
             textColor = Colors.white;
             uiColor = hsl.withLightness(max(hsl.lightness, 0.7)).toColor();
             gridFill = const Color(0xFF121212);
-            gridBorder = HSLColor.fromColor(baseTone).withLightness(0.2).toColor();
+            gridBorder = HSLColor.fromColor(
+              baseTone,
+            ).withLightness(0.2).toColor();
           } else {
             // --- LIGHT MODE CONFIG ---
             baseTone = Color.alphaBlend(
@@ -169,9 +171,10 @@ class _HabitCardState extends ConsumerState<HabitCard> {
           }
           return Container(
             decoration: BoxDecoration(
-              color: isDark ? currentColor.withAlpha(15):currentColor.withAlpha(50) ,
+              color: isDark
+                  ? currentColor.withAlpha(15)
+                  : currentColor.withAlpha(50),
               borderRadius: BorderRadius.circular(20),
-        
             ),
             padding: const EdgeInsets.all(20),
             child: Column(

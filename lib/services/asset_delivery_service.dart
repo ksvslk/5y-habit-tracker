@@ -2,8 +2,12 @@ import 'package:flutter/services.dart';
 import 'dart:io';
 
 class AssetDeliveryService {
-  static const methodChannel = MethodChannel('com.example.fiveyear/asset_delivery');
-  static const eventChannel = EventChannel('com.example.fiveyear/asset_progress');
+  static const methodChannel = MethodChannel(
+    'com.example.fiveyear/asset_delivery',
+  );
+  static const eventChannel = EventChannel(
+    'com.example.fiveyear/asset_progress',
+  );
 
   /// Check if asset pack exists locally (doesn't trigger download)
   Future<String?> getAssetPackPathIfExists(String packName) async {
@@ -11,7 +15,7 @@ class AssetDeliveryService {
       if (Platform.isAndroid || Platform.isIOS) {
         final String? path = await methodChannel.invokeMethod(
           'getAssetPackPathIfExists',
-          {'packName': packName}
+          {'packName': packName},
         );
         return path;
       }
@@ -27,8 +31,8 @@ class AssetDeliveryService {
     try {
       if (Platform.isAndroid || Platform.isIOS) {
         final String? path = await methodChannel.invokeMethod(
-          'getAssetPackPath', 
-          {'packName': packName}
+          'getAssetPackPath',
+          {'packName': packName},
         );
         return path;
       }
@@ -41,7 +45,9 @@ class AssetDeliveryService {
 
   Stream<double> get downloadProgressStream {
     if (Platform.isAndroid) {
-      return eventChannel.receiveBroadcastStream().map((event) => (event as num).toDouble());
+      return eventChannel.receiveBroadcastStream().map(
+        (event) => (event as num).toDouble(),
+      );
     }
     return Stream.value(0.0);
   }

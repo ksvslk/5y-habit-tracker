@@ -28,8 +28,9 @@ String _$habitsHash() => r'93f0ca01ef287e29761c3bcc6ea3a90379c99f95';
 final habitsProvider = AutoDisposeStreamProvider<List<Habit>>.internal(
   habits,
   name: r'habitsProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$habitsHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$habitsHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );

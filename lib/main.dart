@@ -32,7 +32,7 @@ Future<void> main() async {
       .init();
 
   await initializeRevenueCat();
-  
+
   await FlutterGemma.initialize();
 
   // 1. Enable Edge-to-Edge (Android 10+)

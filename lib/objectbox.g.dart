@@ -21,122 +21,143 @@ export 'package:objectbox/objectbox.dart'; // so that callers only have to impor
 
 final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
-      id: const obx_int.IdUid(1, 4485016994875933047),
-      name: 'AppSetting',
-      lastPropertyId: const obx_int.IdUid(7, 2946177685119406113),
-      flags: 0,
-      properties: <obx_int.ModelProperty>[
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(1, 3636631361520360109),
-            name: 'id',
-            type: 6,
-            flags: 1),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(2, 4070952790239567356),
-            name: 'dailyReminderTime',
-            type: 10,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(3, 7289217356529723387),
-            name: 'isReminderEnabled',
-            type: 1,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(4, 3498262719804025435),
-            name: 'isFirstLaunch',
-            type: 1,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(5, 3295890166536996151),
-            name: 'isModelLicenseAccepted',
-            type: 1,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(6, 4587650126150722780),
-            name: 'lastChatDate',
-            type: 10,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(7, 2946177685119406113),
-            name: 'dailyTokenUsage',
-            type: 6,
-            flags: 0)
-      ],
-      relations: <obx_int.ModelRelation>[],
-      backlinks: <obx_int.ModelBacklink>[]),
+    id: const obx_int.IdUid(1, 4485016994875933047),
+    name: 'AppSetting',
+    lastPropertyId: const obx_int.IdUid(7, 2946177685119406113),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 3636631361520360109),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 4070952790239567356),
+        name: 'dailyReminderTime',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 7289217356529723387),
+        name: 'isReminderEnabled',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 3498262719804025435),
+        name: 'isFirstLaunch',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 3295890166536996151),
+        name: 'isModelLicenseAccepted',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 4587650126150722780),
+        name: 'lastChatDate',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 2946177685119406113),
+        name: 'dailyTokenUsage',
+        type: 6,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
   obx_int.ModelEntity(
-      id: const obx_int.IdUid(2, 8154780267385950858),
-      name: 'ChatEntity',
-      lastPropertyId: const obx_int.IdUid(4, 6345652590212304713),
-      flags: 0,
-      properties: <obx_int.ModelProperty>[
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(1, 4067143026635871878),
-            name: 'id',
-            type: 6,
-            flags: 1),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(2, 7004633237514792205),
-            name: 'content',
-            type: 9,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(3, 3728236423135975931),
-            name: 'isUser',
-            type: 1,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(4, 6345652590212304713),
-            name: 'timestamp',
-            type: 10,
-            flags: 0)
-      ],
-      relations: <obx_int.ModelRelation>[],
-      backlinks: <obx_int.ModelBacklink>[]),
+    id: const obx_int.IdUid(2, 8154780267385950858),
+    name: 'ChatEntity',
+    lastPropertyId: const obx_int.IdUid(4, 6345652590212304713),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 4067143026635871878),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 7004633237514792205),
+        name: 'content',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 3728236423135975931),
+        name: 'isUser',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 6345652590212304713),
+        name: 'timestamp',
+        type: 10,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
   obx_int.ModelEntity(
-      id: const obx_int.IdUid(3, 1777435733733610886),
-      name: 'Habit',
-      lastPropertyId: const obx_int.IdUid(7, 8164278109989346529),
-      flags: 0,
-      properties: <obx_int.ModelProperty>[
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(1, 3412487113432680584),
-            name: 'id',
-            type: 6,
-            flags: 1),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(2, 914450398888382575),
-            name: 'name',
-            type: 9,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(3, 6745233684972380373),
-            name: 'colorValue',
-            type: 6,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(4, 1846944871246789339),
-            name: 'theme',
-            type: 9,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(5, 4963428962347961790),
-            name: 'customImagePath',
-            type: 9,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(6, 6358602650059071956),
-            name: 'iconCodePoint',
-            type: 6,
-            flags: 0),
-        obx_int.ModelProperty(
-            id: const obx_int.IdUid(7, 8164278109989346529),
-            name: 'completedDays',
-            type: 30,
-            flags: 0)
-      ],
-      relations: <obx_int.ModelRelation>[],
-      backlinks: <obx_int.ModelBacklink>[])
+    id: const obx_int.IdUid(3, 1777435733733610886),
+    name: 'Habit',
+    lastPropertyId: const obx_int.IdUid(7, 8164278109989346529),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 3412487113432680584),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 914450398888382575),
+        name: 'name',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 6745233684972380373),
+        name: 'colorValue',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 1846944871246789339),
+        name: 'theme',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 4963428962347961790),
+        name: 'customImagePath',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 6358602650059071956),
+        name: 'iconCodePoint',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 8164278109989346529),
+        name: 'completedDays',
+        type: 30,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -150,173 +171,218 @@ final _entities = <obx_int.ModelEntity>[
 /// For Flutter apps, also calls `loadObjectBoxLibraryAndroidCompat()` from
 /// the ObjectBox Flutter library to fix loading the native ObjectBox library
 /// on Android 6 and older.
-Future<obx.Store> openStore(
-    {String? directory,
-    int? maxDBSizeInKB,
-    int? maxDataSizeInKB,
-    int? fileMode,
-    int? maxReaders,
-    bool queriesCaseSensitiveDefault = true,
-    String? macosApplicationGroup}) async {
+Future<obx.Store> openStore({
+  String? directory,
+  int? maxDBSizeInKB,
+  int? maxDataSizeInKB,
+  int? fileMode,
+  int? maxReaders,
+  bool queriesCaseSensitiveDefault = true,
+  String? macosApplicationGroup,
+}) async {
   await loadObjectBoxLibraryAndroidCompat();
-  return obx.Store(getObjectBoxModel(),
-      directory: directory ?? (await defaultStoreDirectory()).path,
-      maxDBSizeInKB: maxDBSizeInKB,
-      maxDataSizeInKB: maxDataSizeInKB,
-      fileMode: fileMode,
-      maxReaders: maxReaders,
-      queriesCaseSensitiveDefault: queriesCaseSensitiveDefault,
-      macosApplicationGroup: macosApplicationGroup);
+  return obx.Store(
+    getObjectBoxModel(),
+    directory: directory ?? (await defaultStoreDirectory()).path,
+    maxDBSizeInKB: maxDBSizeInKB,
+    maxDataSizeInKB: maxDataSizeInKB,
+    fileMode: fileMode,
+    maxReaders: maxReaders,
+    queriesCaseSensitiveDefault: queriesCaseSensitiveDefault,
+    macosApplicationGroup: macosApplicationGroup,
+  );
 }
 
 /// Returns the ObjectBox model definition for this project for use with
 /// [Store.new].
 obx_int.ModelDefinition getObjectBoxModel() {
   final model = obx_int.ModelInfo(
-      entities: _entities,
-      lastEntityId: const obx_int.IdUid(3, 1777435733733610886),
-      lastIndexId: const obx_int.IdUid(0, 0),
-      lastRelationId: const obx_int.IdUid(0, 0),
-      lastSequenceId: const obx_int.IdUid(0, 0),
-      retiredEntityUids: const [],
-      retiredIndexUids: const [],
-      retiredPropertyUids: const [],
-      retiredRelationUids: const [],
-      modelVersion: 5,
-      modelVersionParserMinimum: 5,
-      version: 1);
+    entities: _entities,
+    lastEntityId: const obx_int.IdUid(3, 1777435733733610886),
+    lastIndexId: const obx_int.IdUid(0, 0),
+    lastRelationId: const obx_int.IdUid(0, 0),
+    lastSequenceId: const obx_int.IdUid(0, 0),
+    retiredEntityUids: const [],
+    retiredIndexUids: const [],
+    retiredPropertyUids: const [],
+    retiredRelationUids: const [],
+    modelVersion: 5,
+    modelVersionParserMinimum: 5,
+    version: 1,
+  );
 
   final bindings = <Type, obx_int.EntityDefinition>{
     AppSetting: obx_int.EntityDefinition<AppSetting>(
-        model: _entities[0],
-        toOneRelations: (AppSetting object) => [],
-        toManyRelations: (AppSetting object) => {},
-        getId: (AppSetting object) => object.id,
-        setId: (AppSetting object, int id) {
-          object.id = id;
-        },
-        objectToFB: (AppSetting object, fb.Builder fbb) {
-          fbb.startTable(8);
-          fbb.addInt64(0, object.id);
-          fbb.addInt64(1, object.dailyReminderTime?.millisecondsSinceEpoch);
-          fbb.addBool(2, object.isReminderEnabled);
-          fbb.addBool(3, object.isFirstLaunch);
-          fbb.addBool(4, object.isModelLicenseAccepted);
-          fbb.addInt64(5, object.lastChatDate?.millisecondsSinceEpoch);
-          fbb.addInt64(6, object.dailyTokenUsage);
-          fbb.finish(fbb.endTable());
-          return object.id;
-        },
-        objectFromFB: (obx.Store store, ByteData fbData) {
-          final buffer = fb.BufferContext(fbData);
-          final rootOffset = buffer.derefObject(0);
-          final dailyReminderTimeValue =
-              const fb.Int64Reader().vTableGetNullable(buffer, rootOffset, 6);
-          final lastChatDateValue =
-              const fb.Int64Reader().vTableGetNullable(buffer, rootOffset, 14);
-          final object = AppSetting()
-            ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
-            ..dailyReminderTime = dailyReminderTimeValue == null
-                ? null
-                : DateTime.fromMillisecondsSinceEpoch(dailyReminderTimeValue)
-            ..isReminderEnabled =
-                const fb.BoolReader().vTableGet(buffer, rootOffset, 8, false)
-            ..isFirstLaunch =
-                const fb.BoolReader().vTableGet(buffer, rootOffset, 10, false)
-            ..isModelLicenseAccepted =
-                const fb.BoolReader().vTableGet(buffer, rootOffset, 12, false)
-            ..lastChatDate = lastChatDateValue == null
-                ? null
-                : DateTime.fromMillisecondsSinceEpoch(lastChatDateValue)
-            ..dailyTokenUsage =
-                const fb.Int64Reader().vTableGet(buffer, rootOffset, 16, 0);
-
-          return object;
-        }),
-    ChatEntity: obx_int.EntityDefinition<ChatEntity>(
-        model: _entities[1],
-        toOneRelations: (ChatEntity object) => [],
-        toManyRelations: (ChatEntity object) => {},
-        getId: (ChatEntity object) => object.id,
-        setId: (ChatEntity object, int id) {
-          object.id = id;
-        },
-        objectToFB: (ChatEntity object, fb.Builder fbb) {
-          final contentOffset = fbb.writeString(object.content);
-          fbb.startTable(5);
-          fbb.addInt64(0, object.id);
-          fbb.addOffset(1, contentOffset);
-          fbb.addBool(2, object.isUser);
-          fbb.addInt64(3, object.timestamp.millisecondsSinceEpoch);
-          fbb.finish(fbb.endTable());
-          return object.id;
-        },
-        objectFromFB: (obx.Store store, ByteData fbData) {
-          final buffer = fb.BufferContext(fbData);
-          final rootOffset = buffer.derefObject(0);
-
-          final object = ChatEntity()
-            ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
-            ..content = const fb.StringReader(asciiOptimization: true)
-                .vTableGet(buffer, rootOffset, 6, '')
-            ..isUser =
-                const fb.BoolReader().vTableGet(buffer, rootOffset, 8, false)
-            ..timestamp = DateTime.fromMillisecondsSinceEpoch(
-                const fb.Int64Reader().vTableGet(buffer, rootOffset, 10, 0));
-
-          return object;
-        }),
-    Habit: obx_int.EntityDefinition<Habit>(
-        model: _entities[2],
-        toOneRelations: (Habit object) => [],
-        toManyRelations: (Habit object) => {},
-        getId: (Habit object) => object.id,
-        setId: (Habit object, int id) {
-          object.id = id;
-        },
-        objectToFB: (Habit object, fb.Builder fbb) {
-          final nameOffset = fbb.writeString(object.name);
-          final themeOffset = fbb.writeString(object.theme);
-          final customImagePathOffset = object.customImagePath == null
+      model: _entities[0],
+      toOneRelations: (AppSetting object) => [],
+      toManyRelations: (AppSetting object) => {},
+      getId: (AppSetting object) => object.id,
+      setId: (AppSetting object, int id) {
+        object.id = id;
+      },
+      objectToFB: (AppSetting object, fb.Builder fbb) {
+        fbb.startTable(8);
+        fbb.addInt64(0, object.id);
+        fbb.addInt64(1, object.dailyReminderTime?.millisecondsSinceEpoch);
+        fbb.addBool(2, object.isReminderEnabled);
+        fbb.addBool(3, object.isFirstLaunch);
+        fbb.addBool(4, object.isModelLicenseAccepted);
+        fbb.addInt64(5, object.lastChatDate?.millisecondsSinceEpoch);
+        fbb.addInt64(6, object.dailyTokenUsage);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final dailyReminderTimeValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          6,
+        );
+        final lastChatDateValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          14,
+        );
+        final object = AppSetting()
+          ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
+          ..dailyReminderTime = dailyReminderTimeValue == null
               ? null
-              : fbb.writeString(object.customImagePath!);
-          final completedDaysOffset = fbb.writeList(object.completedDays
-              .map(fbb.writeString)
-              .toList(growable: false));
-          fbb.startTable(8);
-          fbb.addInt64(0, object.id);
-          fbb.addOffset(1, nameOffset);
-          fbb.addInt64(2, object.colorValue);
-          fbb.addOffset(3, themeOffset);
-          fbb.addOffset(4, customImagePathOffset);
-          fbb.addInt64(5, object.iconCodePoint);
-          fbb.addOffset(6, completedDaysOffset);
-          fbb.finish(fbb.endTable());
-          return object.id;
-        },
-        objectFromFB: (obx.Store store, ByteData fbData) {
-          final buffer = fb.BufferContext(fbData);
-          final rootOffset = buffer.derefObject(0);
+              : DateTime.fromMillisecondsSinceEpoch(dailyReminderTimeValue)
+          ..isReminderEnabled = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            8,
+            false,
+          )
+          ..isFirstLaunch = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            10,
+            false,
+          )
+          ..isModelLicenseAccepted = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            12,
+            false,
+          )
+          ..lastChatDate = lastChatDateValue == null
+              ? null
+              : DateTime.fromMillisecondsSinceEpoch(lastChatDateValue)
+          ..dailyTokenUsage = const fb.Int64Reader().vTableGet(
+            buffer,
+            rootOffset,
+            16,
+            0,
+          );
 
-          final object = Habit()
-            ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
-            ..name = const fb.StringReader(asciiOptimization: true)
-                .vTableGet(buffer, rootOffset, 6, '')
-            ..colorValue =
-                const fb.Int64Reader().vTableGet(buffer, rootOffset, 8, 0)
-            ..theme = const fb.StringReader(asciiOptimization: true)
-                .vTableGet(buffer, rootOffset, 10, '')
-            ..customImagePath = const fb.StringReader(asciiOptimization: true)
-                .vTableGetNullable(buffer, rootOffset, 12)
-            ..iconCodePoint =
-                const fb.Int64Reader().vTableGetNullable(buffer, rootOffset, 14)
-            ..completedDays = const fb.ListReader<String>(
-                    fb.StringReader(asciiOptimization: true),
-                    lazy: false)
-                .vTableGet(buffer, rootOffset, 16, []);
+        return object;
+      },
+    ),
+    ChatEntity: obx_int.EntityDefinition<ChatEntity>(
+      model: _entities[1],
+      toOneRelations: (ChatEntity object) => [],
+      toManyRelations: (ChatEntity object) => {},
+      getId: (ChatEntity object) => object.id,
+      setId: (ChatEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (ChatEntity object, fb.Builder fbb) {
+        final contentOffset = fbb.writeString(object.content);
+        fbb.startTable(5);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, contentOffset);
+        fbb.addBool(2, object.isUser);
+        fbb.addInt64(3, object.timestamp.millisecondsSinceEpoch);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
 
-          return object;
-        })
+        final object = ChatEntity()
+          ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
+          ..content = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGet(buffer, rootOffset, 6, '')
+          ..isUser = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            8,
+            false,
+          )
+          ..timestamp = DateTime.fromMillisecondsSinceEpoch(
+            const fb.Int64Reader().vTableGet(buffer, rootOffset, 10, 0),
+          );
+
+        return object;
+      },
+    ),
+    Habit: obx_int.EntityDefinition<Habit>(
+      model: _entities[2],
+      toOneRelations: (Habit object) => [],
+      toManyRelations: (Habit object) => {},
+      getId: (Habit object) => object.id,
+      setId: (Habit object, int id) {
+        object.id = id;
+      },
+      objectToFB: (Habit object, fb.Builder fbb) {
+        final nameOffset = fbb.writeString(object.name);
+        final themeOffset = fbb.writeString(object.theme);
+        final customImagePathOffset = object.customImagePath == null
+            ? null
+            : fbb.writeString(object.customImagePath!);
+        final completedDaysOffset = fbb.writeList(
+          object.completedDays.map(fbb.writeString).toList(growable: false),
+        );
+        fbb.startTable(8);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, nameOffset);
+        fbb.addInt64(2, object.colorValue);
+        fbb.addOffset(3, themeOffset);
+        fbb.addOffset(4, customImagePathOffset);
+        fbb.addInt64(5, object.iconCodePoint);
+        fbb.addOffset(6, completedDaysOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+
+        final object = Habit()
+          ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
+          ..name = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGet(buffer, rootOffset, 6, '')
+          ..colorValue = const fb.Int64Reader().vTableGet(
+            buffer,
+            rootOffset,
+            8,
+            0,
+          )
+          ..theme = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGet(buffer, rootOffset, 10, '')
+          ..customImagePath = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 12)
+          ..iconCodePoint = const fb.Int64Reader().vTableGetNullable(
+            buffer,
+            rootOffset,
+            14,
+          )
+          ..completedDays = const fb.ListReader<String>(
+            fb.StringReader(asciiOptimization: true),
+            lazy: false,
+          ).vTableGet(buffer, rootOffset, 16, []);
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -325,51 +391,62 @@ obx_int.ModelDefinition getObjectBoxModel() {
 /// [AppSetting] entity fields to define ObjectBox queries.
 class AppSetting_ {
   /// see [AppSetting.id]
-  static final id =
-      obx.QueryIntegerProperty<AppSetting>(_entities[0].properties[0]);
+  static final id = obx.QueryIntegerProperty<AppSetting>(
+    _entities[0].properties[0],
+  );
 
   /// see [AppSetting.dailyReminderTime]
-  static final dailyReminderTime =
-      obx.QueryDateProperty<AppSetting>(_entities[0].properties[1]);
+  static final dailyReminderTime = obx.QueryDateProperty<AppSetting>(
+    _entities[0].properties[1],
+  );
 
   /// see [AppSetting.isReminderEnabled]
-  static final isReminderEnabled =
-      obx.QueryBooleanProperty<AppSetting>(_entities[0].properties[2]);
+  static final isReminderEnabled = obx.QueryBooleanProperty<AppSetting>(
+    _entities[0].properties[2],
+  );
 
   /// see [AppSetting.isFirstLaunch]
-  static final isFirstLaunch =
-      obx.QueryBooleanProperty<AppSetting>(_entities[0].properties[3]);
+  static final isFirstLaunch = obx.QueryBooleanProperty<AppSetting>(
+    _entities[0].properties[3],
+  );
 
   /// see [AppSetting.isModelLicenseAccepted]
-  static final isModelLicenseAccepted =
-      obx.QueryBooleanProperty<AppSetting>(_entities[0].properties[4]);
+  static final isModelLicenseAccepted = obx.QueryBooleanProperty<AppSetting>(
+    _entities[0].properties[4],
+  );
 
   /// see [AppSetting.lastChatDate]
-  static final lastChatDate =
-      obx.QueryDateProperty<AppSetting>(_entities[0].properties[5]);
+  static final lastChatDate = obx.QueryDateProperty<AppSetting>(
+    _entities[0].properties[5],
+  );
 
   /// see [AppSetting.dailyTokenUsage]
-  static final dailyTokenUsage =
-      obx.QueryIntegerProperty<AppSetting>(_entities[0].properties[6]);
+  static final dailyTokenUsage = obx.QueryIntegerProperty<AppSetting>(
+    _entities[0].properties[6],
+  );
 }
 
 /// [ChatEntity] entity fields to define ObjectBox queries.
 class ChatEntity_ {
   /// see [ChatEntity.id]
-  static final id =
-      obx.QueryIntegerProperty<ChatEntity>(_entities[1].properties[0]);
+  static final id = obx.QueryIntegerProperty<ChatEntity>(
+    _entities[1].properties[0],
+  );
 
   /// see [ChatEntity.content]
-  static final content =
-      obx.QueryStringProperty<ChatEntity>(_entities[1].properties[1]);
+  static final content = obx.QueryStringProperty<ChatEntity>(
+    _entities[1].properties[1],
+  );
 
   /// see [ChatEntity.isUser]
-  static final isUser =
-      obx.QueryBooleanProperty<ChatEntity>(_entities[1].properties[2]);
+  static final isUser = obx.QueryBooleanProperty<ChatEntity>(
+    _entities[1].properties[2],
+  );
 
   /// see [ChatEntity.timestamp]
-  static final timestamp =
-      obx.QueryDateProperty<ChatEntity>(_entities[1].properties[3]);
+  static final timestamp = obx.QueryDateProperty<ChatEntity>(
+    _entities[1].properties[3],
+  );
 }
 
 /// [Habit] entity fields to define ObjectBox queries.
@@ -378,26 +455,32 @@ class Habit_ {
   static final id = obx.QueryIntegerProperty<Habit>(_entities[2].properties[0]);
 
   /// see [Habit.name]
-  static final name =
-      obx.QueryStringProperty<Habit>(_entities[2].properties[1]);
+  static final name = obx.QueryStringProperty<Habit>(
+    _entities[2].properties[1],
+  );
 
   /// see [Habit.colorValue]
-  static final colorValue =
-      obx.QueryIntegerProperty<Habit>(_entities[2].properties[2]);
+  static final colorValue = obx.QueryIntegerProperty<Habit>(
+    _entities[2].properties[2],
+  );
 
   /// see [Habit.theme]
-  static final theme =
-      obx.QueryStringProperty<Habit>(_entities[2].properties[3]);
+  static final theme = obx.QueryStringProperty<Habit>(
+    _entities[2].properties[3],
+  );
 
   /// see [Habit.customImagePath]
-  static final customImagePath =
-      obx.QueryStringProperty<Habit>(_entities[2].properties[4]);
+  static final customImagePath = obx.QueryStringProperty<Habit>(
+    _entities[2].properties[4],
+  );
 
   /// see [Habit.iconCodePoint]
-  static final iconCodePoint =
-      obx.QueryIntegerProperty<Habit>(_entities[2].properties[5]);
+  static final iconCodePoint = obx.QueryIntegerProperty<Habit>(
+    _entities[2].properties[5],
+  );
 
   /// see [Habit.completedDays]
-  static final completedDays =
-      obx.QueryStringVectorProperty<Habit>(_entities[2].properties[6]);
+  static final completedDays = obx.QueryStringVectorProperty<Habit>(
+    _entities[2].properties[6],
+  );
 }

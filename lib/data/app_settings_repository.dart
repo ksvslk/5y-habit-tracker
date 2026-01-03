@@ -44,16 +44,19 @@ class AppSettingsRepository {
         ..dailyTokenUsage = 0;
       _box.put(settings);
     }
-    
+
     final lastChat = settings.lastChatDate;
     if (lastChat != null) {
       final now = DateTime.now();
-      final isSameDay = now.year == lastChat.year && now.month == lastChat.month && now.day == lastChat.day;
-      
+      final isSameDay =
+          now.year == lastChat.year &&
+          now.month == lastChat.month &&
+          now.day == lastChat.day;
+
       if (!isSameDay) {
-         settings.dailyTokenUsage = 0;
-         settings.lastChatDate = now;
-         _box.put(settings);
+        settings.dailyTokenUsage = 0;
+        settings.lastChatDate = now;
+        _box.put(settings);
       }
     }
 
@@ -67,13 +70,19 @@ class AppSettingsRepository {
     _box.put(settings);
 
     if (isEnabled && time != null) {
-      await notificationService.scheduleDailyNotification(time.hour, time.minute);
+      await notificationService.scheduleDailyNotification(
+        time.hour,
+        time.minute,
+      );
     } else {
       await notificationService.cancelDailyNotifications();
     }
   }
 
-  Future<void> finalizeOnboarding(bool enableNotifications, DateTime? time) async {
+  Future<void> finalizeOnboarding(
+    bool enableNotifications,
+    DateTime? time,
+  ) async {
     final settings = await getSettings();
     settings.isReminderEnabled = enableNotifications;
     settings.dailyReminderTime = time;
@@ -81,7 +90,10 @@ class AppSettingsRepository {
     _box.put(settings);
 
     if (enableNotifications && time != null) {
-      await notificationService.scheduleDailyNotification(time.hour, time.minute);
+      await notificationService.scheduleDailyNotification(
+        time.hour,
+        time.minute,
+      );
     } else {
       await notificationService.cancelDailyNotifications();
     }

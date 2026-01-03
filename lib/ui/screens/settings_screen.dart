@@ -186,12 +186,14 @@ class SettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-               ListTile(
+              ListTile(
                 leading: const Icon(Icons.mail),
                 title: const Text('Contact Me'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                 launchUrl(Uri.parse('mailto:indrek@indest.ee?subject=5Y&body=Hi!'));
+                  launchUrl(
+                    Uri.parse('mailto:indrek@indest.ee?subject=5Y&body=Hi!'),
+                  );
                 },
               ),
               const SizedBox(height: 20),

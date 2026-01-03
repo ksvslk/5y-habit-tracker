@@ -27,57 +27,86 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   late FocusNode _iconFocusNode;
 
   final List<IconData> _availableIcons = [
-// Achievement & Progress
-    Icons.emoji_events, Icons.star, Icons.flag, Icons.check_circle, Icons.timeline,
+    // Achievement & Progress
+    Icons.emoji_events,
+    Icons.star,
+    Icons.flag,
+    Icons.check_circle,
+    Icons.timeline,
     Icons.lightbulb, Icons.bolt, Icons.local_fire_department,
-    
+
     // Time & Schedule
-    Icons.access_alarm, Icons.timer, Icons.schedule, Icons.today, Icons.alarm_on,
-    
+    Icons.access_alarm,
+    Icons.timer,
+    Icons.schedule,
+    Icons.today,
+    Icons.alarm_on,
+
     // Fitness & Sports
-    Icons.fitness_center, Icons.directions_run, Icons.directions_walk, Icons.hiking,
+    Icons.fitness_center,
+    Icons.directions_run,
+    Icons.directions_walk,
+    Icons.hiking,
     Icons.pool, Icons.pedal_bike, Icons.sports_soccer, Icons.sports_basketball,
-    
+
     // Health & Wellness
-    Icons.favorite, Icons.healing, Icons.self_improvement, Icons.spa, Icons.water_drop,
+    Icons.favorite,
+    Icons.healing,
+    Icons.self_improvement,
+    Icons.spa,
+    Icons.water_drop,
     Icons.bed, Icons.bedtime, Icons.psychology,
-    
+
     // Food & Drink
-    Icons.restaurant, Icons.lunch_dining, Icons.apple, Icons.coffee, Icons.local_cafe,
+    Icons.restaurant,
+    Icons.lunch_dining,
+    Icons.apple,
+    Icons.coffee,
+    Icons.local_cafe,
     Icons.water, Icons.liquor, Icons.no_food, Icons.fastfood, Icons.local_pizza,
     Icons.cake,
-    
+
     // Learning & Reading
     Icons.school, Icons.book, Icons.menu_book, Icons.language, Icons.science,
-    
+
     // Work & Productivity
     Icons.work, Icons.laptop, Icons.code, Icons.edit,
-    
+
     // Creative & Hobbies
-    Icons.music_note, Icons.palette, Icons.brush, Icons.photo_camera, Icons.videogame_asset,
-    
+    Icons.music_note,
+    Icons.palette,
+    Icons.brush,
+    Icons.photo_camera,
+    Icons.videogame_asset,
+
     // Finance
     Icons.attach_money, Icons.savings, Icons.shopping_cart, Icons.credit_card,
     Icons.shopping_bag, Icons.store,
-    
+
     // Home & Chores
-    Icons.home, Icons.cleaning_services, Icons.local_laundry_service, Icons.kitchen,
-    
+    Icons.home,
+    Icons.cleaning_services,
+    Icons.local_laundry_service,
+    Icons.kitchen,
+
     // Social
     Icons.people, Icons.chat, Icons.call, Icons.favorite_border,
-    
+
     // Nature & Outdoors
     Icons.local_florist, Icons.park, Icons.pets, Icons.nature,
-    
+
     // Bad Habits & Breaking Habits
-    Icons.smoke_free, Icons.smoking_rooms, Icons.do_not_disturb, Icons.block, 
-    Icons.phone_disabled, Icons.phonelink_erase, Icons.phone_android, Icons.smartphone,
+    Icons.smoke_free, Icons.smoking_rooms, Icons.do_not_disturb, Icons.block,
+    Icons.phone_disabled,
+    Icons.phonelink_erase,
+    Icons.phone_android,
+    Icons.smartphone,
     Icons.cancel, Icons.close, Icons.remove_circle, Icons.warning, Icons.error,
     Icons.no_cell, Icons.mobile_off, Icons.notifications_off, Icons.snooze,
     Icons.local_bar, Icons.wine_bar, Icons.nightlife, Icons.bed_outlined,
     Icons.tv, Icons.tv_off, Icons.laptop_chromebook, Icons.screen_lock_portrait,
     Icons.no_drinks, Icons.smoke_free, Icons.block_flipped,
-    
+
     // Miscellaneous
     Icons.celebration, Icons.card_giftcard, Icons.recycling,
   ];
@@ -172,8 +201,8 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
               _deleteHabit();
             },
             child: Text(
-              "Delete", 
-              style: TextStyle(color: Theme.of(context).colorScheme.error)
+              "Delete",
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
         ],
@@ -216,9 +245,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: isActive 
-                    ? activeColor 
-                    : colorScheme.onSurfaceVariant,
+                color: isActive ? activeColor : colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 12),
@@ -290,8 +317,8 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                       focusNode: _nameFocusNode,
                       textInputAction: TextInputAction.next,
                       style: TextStyle(
-                        color: colorScheme.onSurface, 
-                        fontSize: 18
+                        color: colorScheme.onSurface,
+                        fontSize: 18,
                       ),
                       cursorColor: activeColor,
                       decoration: InputDecoration(
@@ -416,10 +443,11 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isLocked
-                                      ? colorScheme.surfaceContainerHigh.withOpacity(0.5)
+                                      ? colorScheme.surfaceContainerHigh
+                                            .withOpacity(0.5)
                                       : (isSelected
-                                          ? contrastColor.withOpacity(0.2)
-                                          : colorScheme.surfaceContainerHigh),
+                                            ? contrastColor.withOpacity(0.2)
+                                            : colorScheme.surfaceContainerHigh),
                                   border: Border.all(
                                     color: isSelected
                                         ? contrastColor
@@ -465,7 +493,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                                             textAlign: TextAlign.center,
                                           ),
                                         ),
-                                      ]
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -481,7 +509,10 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
                   Center(
                     child: TextButton.icon(
                       onPressed: _confirmDelete,
-                      icon: Icon(Icons.delete_outline, color: colorScheme.error),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: colorScheme.error,
+                      ),
                       label: Text(
                         "Delete Habit",
                         style: TextStyle(

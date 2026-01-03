@@ -12,7 +12,10 @@ class HabitRepository {
   Stream<List<Habit>> watchAllHabits() {
     // The query builder is created once and the stream is returned.
     // The stream is automatically updated when the data changes.
-    return _box.query().watch(triggerImmediately: true).map((query) => query.find());
+    return _box
+        .query()
+        .watch(triggerImmediately: true)
+        .map((query) => query.find());
   }
 
   Future<void> addHabit(Habit habit) async {

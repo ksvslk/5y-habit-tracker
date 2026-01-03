@@ -23,12 +23,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _landscapeHabitController = ScrollController();
   String? _pendingScrollToId;
   bool _hasScrolled = false;
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _landscapeHabitController.dispose();
     super.dispose();
   }
 
@@ -106,7 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               : null,
           body: CustomScrollView(
             controller: _scrollController,
-            scrollDirection: isLandscape ? Axis.horizontal : Axis.vertical,
+            scrollDirection: Axis.vertical, // Always vertical
             cacheExtent: 2000,
             slivers: [
               if (!isLandscape)
@@ -185,17 +187,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         if (index != -1) {
                           _hasScrolled = true;
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (_scrollController.hasClients && mounted) {
+                            if (mounted) {
                               final itemSize = isLandscape ? 340.0 : 200.0;
                               final targetPosition = (index * itemSize).clamp(
                                 0.0,
                                 _scrollController.position.maxScrollExtent,
                               );
-                              _scrollController.animateTo(
-                                targetPosition,
-                                duration: const Duration(milliseconds: 700),
-                                curve: Curves.easeOutCubic,
-                              );
+                              if (isLandscape) {
+                                _landscapeHabitController.animateTo(
+                                  targetPosition,
+                                  duration: const Duration(milliseconds: 700),
+                                  curve: Curves.easeOutCubic,
+                                );
+                              } else if (_scrollController.hasClients) {
+                                _scrollController.animateTo(
+                                  targetPosition,
+                                  duration: const Duration(milliseconds: 700),
+                                  curve: Curves.easeOutCubic,
+                                );
+                              }
                             }
                           });
                           Future.delayed(const Duration(milliseconds: 800), () {
@@ -261,44 +271,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       }
 
                       // Normal List State
-                      return SliverPadding(
-                        padding: isLandscape
-                            ? const EdgeInsets.fromLTRB(20, 20, 100, 20)
-                            : const EdgeInsets.fromLTRB(20, 10, 20, 120),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate((
-                            context,
-                            index,
-                          ) {
-                            final habit = habits[index];
+                      if (isLandscape) {
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 400,
+                            child: ListView.builder(
+                              controller: _landscapeHabitController,
+                              padding: const EdgeInsets.fromLTRB(20, 20, 0, 20),
+                              scrollDirection: Axis.horizontal,
+                              itemCount: habits.length,
+                              itemBuilder: (context, index) {
+                                final habit = habits[index];
+                                final bool isLocked = !isPro && index >= 2;
 
-                            // NEW: Check lock status
-                            // Lock if user is NOT pro AND index is 2 or greater (0, 1 are free)
-                            final bool isLocked = !isPro && index >= 2;
+                                Widget card = SizedBox(
+                                  width: 320,
+                                  child: HabitCard(habit: habit),
+                                );
 
-                            Widget card = isLandscape
-                                ? SizedBox(
-                                    width: 320,
-                                    child: HabitCard(habit: habit),
-                                  )
-                                : HabitCard(habit: habit);
+                                if (isLocked) {
+                                  card = _LockOverlay(child: card);
+                                }
 
-                            // NEW: Wrap locked cards with overlay
-                            if (isLocked) {
-                              card = _LockOverlay(child: card);
-                            }
+                                return RepaintBoundary(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 24),
+                                    child: card,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      } else {
+                        return SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 120),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final habit = habits[index];
+                              final bool isLocked = !isPro && index >= 2;
 
-                            return RepaintBoundary(
-                              child: Padding(
-                                padding: isLandscape
-                                    ? const EdgeInsets.only(right: 24)
-                                    : const EdgeInsets.only(bottom: 24),
-                                child: card,
-                              ),
-                            );
-                          }, childCount: habits.length),
-                        ),
-                      );
+                              Widget card = HabitCard(habit: habit);
+
+                              if (isLocked) {
+                                card = _LockOverlay(child: card);
+                              }
+
+                              return RepaintBoundary(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 24),
+                                  child: card,
+                                ),
+                              );
+                            }, childCount: habits.length),
+                          ),
+                        );
+                      }
                     },
                   );
                 },

@@ -78,7 +78,7 @@ class NotificationService {
     if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
       return notificationAppLaunchDetails?.notificationResponse?.payload;
     }
-    
+
     return null;
   }
 
@@ -165,7 +165,7 @@ class NotificationService {
     return scheduledDate;
   }
 
- Future<bool> requestPermissions() async {
+  Future<bool> requestPermissions() async {
     if (Platform.isAndroid) {
       final androidImplementation = flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -173,8 +173,8 @@ class NotificationService {
           >();
 
       if (androidImplementation != null) {
-        final bool? granted =
-            await androidImplementation.requestNotificationsPermission();
+        final bool? granted = await androidImplementation
+            .requestNotificationsPermission();
         return granted ?? false;
       }
     } else if (Platform.isIOS) {

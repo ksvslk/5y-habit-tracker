@@ -61,19 +61,19 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
                 final granted = await ref
                     .read(notificationServiceProvider)
                     .requestPermissions();
-                
+
                 if (granted) {
                   setState(() => _enableNotifications = true);
                 } else {
-                   setState(() => _enableNotifications = false);
-                   if (mounted) {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       SnackBar(
-                         content: const Text('Notifications permission denied'),
-                         backgroundColor: colorScheme.error,
-                        ),
-                     );
-                   }
+                  setState(() => _enableNotifications = false);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Notifications permission denied'),
+                        backgroundColor: colorScheme.error,
+                      ),
+                    );
+                  }
                 }
               } else {
                 setState(() => _enableNotifications = false);
@@ -83,10 +83,7 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: _saveAndClose,
-          child: const Text('Done'),
-        ),
+        TextButton(onPressed: _saveAndClose, child: const Text('Done')),
       ],
     );
   }

@@ -40,7 +40,7 @@ class AppSetting {
 
   @Property(type: PropertyType.date)
   DateTime? dailyReminderTime;
-  
+
   bool isReminderEnabled = false;
   bool isFirstLaunch = true;
   bool isModelLicenseAccepted = false;
@@ -59,7 +59,7 @@ class ChatEntity {
 
   late String content; // Renamed to avoid conflicts
   late bool isUser;
-  
+
   @Property(type: PropertyType.date)
   late DateTime timestamp;
 }

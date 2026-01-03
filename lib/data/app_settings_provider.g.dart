@@ -29,8 +29,9 @@ String _$appSettingsHash() => r'64a42bb71e28dbee450b3cc5b7d2e4249d14dd61';
 final appSettingsProvider = AutoDisposeStreamProvider<AppSetting>.internal(
   appSettings,
   name: r'appSettingsProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$appSettingsHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$appSettingsHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
