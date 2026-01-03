@@ -118,16 +118,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
+        automaticallyImplyLeading: false, // Disable default back button
         title: const Text('Private AI'), // Updated title
+        leading: isReady // This will be the "edit button" (delete in this case)
+            ? IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () async {
+                  await notifier.clearMemory();
+                  _showTopSnackbar('Memory cleared.');
+                },
+              )
+            : null, // No leading widget if not ready
         actions: [
-          if (isReady)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
-                await notifier.clearMemory();
-                _showTopSnackbar('Memory cleared.');
-              },
-            ),
+          IconButton( // This will be the "back button"
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
         ],
       ),
       body: Stack(

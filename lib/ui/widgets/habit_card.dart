@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:fiveyear/data/entities.dart';
 import 'package:fiveyear/data/habit_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/habit_schema.dart';
 import '../../data/theme_colors.dart';
 import '../screens/calendar_screen.dart';
 import 'mosaic_painter.dart';

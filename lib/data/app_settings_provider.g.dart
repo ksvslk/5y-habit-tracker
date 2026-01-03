@@ -7,7 +7,7 @@ part of 'app_settings_provider.dart';
 // **************************************************************************
 
 String _$appSettingsRepositoryHash() =>
-    r'462751109e3a1597bd2df7ade23960f5ba1a604a';
+    r'627bc2c4d1792dc036d4754bba5f553400c37285';
 
 /// See also [appSettingsRepository].
 @ProviderFor(appSettingsRepository)
@@ -22,11 +22,11 @@ final appSettingsRepositoryProvider = Provider<AppSettingsRepository>.internal(
 );
 
 typedef AppSettingsRepositoryRef = ProviderRef<AppSettingsRepository>;
-String _$appSettingsHash() => r'0856dbb059e82de249abdcd45a5e547b09af40ae';
+String _$appSettingsHash() => r'64a42bb71e28dbee450b3cc5b7d2e4249d14dd61';
 
 /// See also [appSettings].
 @ProviderFor(appSettings)
-final appSettingsProvider = AutoDisposeStreamProvider<AppSettings>.internal(
+final appSettingsProvider = AutoDisposeStreamProvider<AppSetting>.internal(
   appSettings,
   name: r'appSettingsProvider',
   debugGetCreateSourceHash:
@@ -35,6 +35,6 @@ final appSettingsProvider = AutoDisposeStreamProvider<AppSettings>.internal(
   allTransitiveDependencies: null,
 );
 
-typedef AppSettingsRef = AutoDisposeStreamProviderRef<AppSettings>;
+typedef AppSettingsRef = AutoDisposeStreamProviderRef<AppSetting>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

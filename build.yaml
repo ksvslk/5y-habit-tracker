@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      objectbox_generator:
+        generate_for:
+          # We explicitly tell the generator to only look at this file for entities.
+          - lib/data/entities.dart
+      riverpod_generator:
+        generate_for:
+          # We explicitly tell the generator to ignore database-related files.
+          exclude:
+            - 'lib/data/drift_database.dart'
+            - 'lib/data/objectbox.dart'
+            - 'lib/data/entities.dart'
+            - 'lib/data/database.drift'

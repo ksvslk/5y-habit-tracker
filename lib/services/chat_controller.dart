@@ -13,8 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 bool _hasClearedHistoryThisSession = false;
 
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
-  final dbFuture = ref.watch(isarDatabaseProvider.future);
-  return ChatRepository(dbFuture);
+  final db = ref.watch(objectboxProvider).requireValue;
+  return ChatRepository(db);
 });
 
 final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>(
@@ -156,7 +156,7 @@ class ChatController extends StateNotifier<ChatState> {
 
     final history = await _repo.getHistory();
     final msgs = history
-        .map((e) => ChatMessage(text: e.text ?? "", isUser: e.isUser ?? false))
+        .map((e) => ChatMessage(text: e.content, isUser: e.isUser))
         .toList();
 
     int historicalTokens = 0;

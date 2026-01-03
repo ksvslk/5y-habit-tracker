@@ -1,20 +1,10 @@
-import 'package:fiveyear/data/app_settings_schema.dart';
-import 'package:fiveyear/data/chat_entity_schema.dart';
-import 'package:fiveyear/data/habit_schema.dart';
-import 'package:isar/isar.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:fiveyear/data/objectbox.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final isarDatabaseProvider = FutureProvider<Isar>((ref) async {
-  final dir = await getApplicationDocumentsDirectory();
-  
-  if (Isar.instanceNames.isEmpty) {
-    return await Isar.open(
-      [HabitSchema, ChatEntitySchema, AppSettingsSchema],
-      directory: dir.path,
-      inspector: true,
-    );
-  }
-  
-  return Isar.getInstance()!;
+/// Provides the ObjectBox store instance to the rest of the app.
+/// 
+/// It's a FutureProvider because opening the store is an async operation.
+/// Other providers will watch this to get the store when it's ready.
+final objectboxProvider = FutureProvider<ObjectBox>((ref) async {
+  return ObjectBox.create();
 });

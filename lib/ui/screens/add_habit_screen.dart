@@ -1,10 +1,10 @@
 import 'dart:math';
+import 'package:fiveyear/data/entities.dart';
 import 'package:fiveyear/data/habit_provider.dart';
 import 'package:fiveyear/data/subscription_service.dart'; //
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart'; // Import for Paywall
-import '../../data/habit_schema.dart';
 import '../../data/theme_colors.dart';
 
 class AddHabitScreen extends ConsumerStatefulWidget {

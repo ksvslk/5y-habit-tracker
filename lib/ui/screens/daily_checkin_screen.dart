@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'dart:ui'; 
+import 'package:fiveyear/data/entities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/habit_schema.dart';
 import '../../data/habit_provider.dart';
 import '../../data/theme_colors.dart'; 
 

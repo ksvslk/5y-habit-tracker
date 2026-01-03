@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:math';
+import 'package:fiveyear/data/entities.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../../data/habit_schema.dart';
 import '../../data/habit_provider.dart';
 import '../../data/theme_colors.dart';
 import 'edit_habit_screen.dart';
@@ -379,26 +379,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           body: SafeArea(
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit, color: iconColor),
-                        onPressed: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => EditHabitScreen(habit: currentHabit),
-                            ),
-                          );
-                          // Handle deletion return
-                          if (result == 'DELETED' && mounted) {
-                            Navigator.pop(context);
-                          }
-                        },
-                      ),
-                      TextButton(
+                AppBar(
+                  automaticallyImplyLeading: false, // Disable default back button
+                  leading: IconButton(
+                    icon: Icon(Icons.edit, color: iconColor), // Existing edit button
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditHabitScreen(habit: currentHabit),
+                        ),
+                      );
+                      if (result == 'DELETED' && mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                  title: Text(
+                    currentHabit.name, // Habit name as title
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  centerTitle: true,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  foregroundColor: Theme.of(context).colorScheme.onSurface,
+                  actions: [
+                    TextButton(
                         style: TextButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                         onPressed: () => Navigator.pop(context),
                         child: Text(
@@ -410,8 +418,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
                 Expanded(
                   child: SingleChildScrollView(
