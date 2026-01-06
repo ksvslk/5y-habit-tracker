@@ -102,7 +102,7 @@ class _HabitCardState extends ConsumerState<HabitCard> {
         if (result != null) {
           ref
               .read(habitRepositoryProvider)
-              .updateHabitDays(widget.habit.id, result);
+              ?.updateHabitDays(widget.habit.id, result);
         }
       },
       child: AnimatedBuilder(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -11,7 +12,7 @@ part 'notification_service.g.dart';
 
 // 1. Create the provider
 @Riverpod(keepAlive: true)
-NotificationService notificationService(NotificationServiceRef ref) {
+NotificationService notificationService(Ref ref) {
   return NotificationService();
 }
 
@@ -48,16 +49,16 @@ class NotificationService {
 
     const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
-        );
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin,
-        );
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
+    );
 
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
@@ -92,8 +93,7 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
   }
 
@@ -118,9 +118,10 @@ class NotificationService {
     // 1. Cancel old notifications so we don't pile them up
     await flutterLocalNotificationsPlugin.cancel(0);
 
-    // 2. Calculate the next time (e.g. 20:00)
+    // 2. Check for permission and schedule accordingly
+    final useExact = await hasExactAlarmPermission();
     final scheduledTime = _nextInstanceOfTime(hour, minute);
-    print('Scheduling notification for: $scheduledTime');
+    print('Scheduling notification for: $scheduledTime (exact: $useExact)');
 
     // 3. Schedule the new one
     await flutterLocalNotificationsPlugin.zonedSchedule(
@@ -138,7 +139,9 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: useExact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: 'daily_check_in',
     );
@@ -165,33 +168,39 @@ class NotificationService {
     return scheduledDate;
   }
 
-  Future<bool> requestPermissions() async {
+  // --- NEW PERMISSION LOGIC USING permission_handler ---
+
+  /// Silently checks if standard notification permission is granted.
+  Future<bool> hasNotificationPermission() async {
+    final status = await Permission.notification.status;
+    return status.isGranted;
+  }
+
+  /// Requests standard notification permission. Returns true if granted.
+  Future<bool> requestNotificationPermission() async {
+    final status = await Permission.notification.request();
+    return status.isGranted;
+  }
+
+  /// Silently checks if the exact alarm permission is granted.
+  Future<bool> hasExactAlarmPermission() async {
     if (Platform.isAndroid) {
-      final androidImplementation = flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >();
-
-      if (androidImplementation != null) {
-        final bool? granted = await androidImplementation
-            .requestNotificationsPermission();
-        return granted ?? false;
-      }
-    } else if (Platform.isIOS) {
-      final iosImplementation = flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin
-          >();
-
-      if (iosImplementation != null) {
-        final bool? granted = await iosImplementation.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-        return granted ?? false;
-      }
+      final status = await Permission.scheduleExactAlarm.status;
+      return status.isGranted;
     }
-    return false;
+    return true; // Not applicable on other platforms
+  }
+
+  /// Requests the exact alarm permission.
+  /// This will open the special settings screen on Android 14+.
+  Future<void> requestExactAlarmPermission() async {
+    if (Platform.isAndroid) {
+      await Permission.scheduleExactAlarm.request();
+    }
+  }
+
+  /// Opens the app's settings screen so the user can manually change permissions.
+  Future<void> openAppSettings() async {
+    await openAppSettings();
   }
 }

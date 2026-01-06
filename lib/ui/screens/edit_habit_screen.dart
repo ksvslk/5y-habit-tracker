@@ -177,7 +177,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
       ..theme = selectedTheme
       ..iconCodePoint = selectedIcon.codePoint;
 
-    ref.read(habitRepositoryProvider).updateHabit(updatedHabit);
+    ref.read(habitRepositoryProvider)?.updateHabit(updatedHabit);
 
     Navigator.pop(context, updatedHabit);
   }
@@ -211,7 +211,7 @@ class _EditHabitScreenState extends ConsumerState<EditHabitScreen> {
   }
 
   void _deleteHabit() {
-    ref.read(habitRepositoryProvider).deleteHabit(widget.habit.id);
+    ref.read(habitRepositoryProvider)?.deleteHabit(widget.habit.id);
     Navigator.pop(context, 'DELETED');
   }
 

@@ -57,7 +57,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
 
     if (!currentData.contains(today)) {
       final newData = List<String>.from(currentData)..add(today);
-      ref.read(habitRepositoryProvider).updateHabitDays(habit.id, newData);
+      ref.read(habitRepositoryProvider)?.updateHabitDays(habit.id, newData);
       _completedSessionHabits.add(habit);
     }
 
@@ -72,7 +72,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
 
     if (currentData.contains(today)) {
       final newData = List<String>.from(currentData)..remove(today);
-      ref.read(habitRepositoryProvider).updateHabitDays(habit.id, newData);
+      ref.read(habitRepositoryProvider)?.updateHabitDays(habit.id, newData);
     }
 
     _skippedSessionHabits.add(habit);
@@ -116,7 +116,7 @@ class _DailyCheckInScreenState extends ConsumerState<DailyCheckInScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text("Error: $e")),
+        error: (e, s) => const Center(child: CircularProgressIndicator()),
       ),
     );
   }

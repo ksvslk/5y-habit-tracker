@@ -3,10 +3,10 @@ import 'dart:io';
 
 class AssetDeliveryService {
   static const methodChannel = MethodChannel(
-    'com.example.fiveyear/asset_delivery',
+    'com.indest.fiveyearhabittracker/asset_delivery',
   );
   static const eventChannel = EventChannel(
-    'com.example.fiveyear/asset_progress',
+    'com.indest.fiveyearhabittracker/asset_progress',
   );
 
   /// Check if asset pack exists locally (doesn't trigger download)
@@ -44,7 +44,7 @@ class AssetDeliveryService {
   }
 
   Stream<double> get downloadProgressStream {
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid || Platform.isIOS) {
       return eventChannel.receiveBroadcastStream().map(
         (event) => (event as num).toDouble(),
       );

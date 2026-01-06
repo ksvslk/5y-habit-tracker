@@ -8,20 +8,15 @@ part 'app_settings_provider.g.dart';
 
 // 1. Repository Provider
 @Riverpod(keepAlive: true)
-AppSettingsRepository appSettingsRepository(AppSettingsRepositoryRef ref) {
+AppSettingsRepository appSettingsRepository(Ref ref) {
   final notificationService = ref.watch(notificationServiceProvider);
-  final objectbox = ref.watch(objectboxProvider).value;
-
-  if (objectbox == null) {
-    throw Exception("ObjectBox store not available");
-  }
-
+  final objectbox = ref.watch(objectboxProvider).requireValue; // This will wait
   return AppSettingsRepository(objectbox, notificationService);
 }
 
-// 2. Settings Stream (UI listens to this)
-@riverpod
-Stream<AppSetting> appSettings(AppSettingsRef ref) {
+// 2. Settings Stream
+@Riverpod(keepAlive: true)
+Stream<AppSetting> appSettings(Ref ref) {
   final repository = ref.watch(appSettingsRepositoryProvider);
   return repository.watchSettings();
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:fiveyear/data/app_settings_provider.dart';
+import 'package:fiveyear/data/entities.dart';
 import 'package:fiveyear/data/subscription_service.dart';
 import 'package:fiveyear/services/notification_service.dart';
 import 'package:flutter/gestures.dart';
@@ -10,19 +11,68 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Silently sync status when the screen is first loaded.
+    _syncNotificationStatus();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _syncNotificationStatus();
+    }
+  }
+
+  /// Silently checks permissions and updates the app state if it's out of sync.
+  Future<void> _syncNotificationStatus() async {
+    final settings = ref.read(appSettingsProvider).when(
+          data: (data) => data,
+          loading: () => null,
+          error: (_, __) => null,
+        );
+
+    if (settings == null || !settings.isReminderEnabled) {
+      return;
+    }
+
+    final notificationService = ref.read(notificationServiceProvider);
+    
+    final standardGranted = await notificationService.hasNotificationPermission();
+    final exactGranted = await notificationService.hasExactAlarmPermission();
+
+    if (!standardGranted || !exactGranted) {
+      ref
+          .read(appSettingsRepositoryProvider)
+          .updateDailyReminder(false, settings.dailyReminderTime);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settingsAsync = ref.watch(appSettingsProvider);
     final subscriptionAsync = ref.watch(subscriptionStatusProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    // SIMPLER SOLUTION:
-    // Just get the value. If it's loading or null, we assume 'false' (Not Pro)
-    // so the UI renders immediately without a spinner.
-    final bool isPro = subscriptionAsync.valueOrNull ?? false;
+    final bool isPro = subscriptionAsync.value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +82,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => const Center(child: CircularProgressIndicator()),
         data: (settings) {
           return ListView(
             children: [
@@ -45,10 +95,6 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-
-              // NO SPINNER. NO JANK.
-              // It renders the "Choose Premium" button instantly.
-              // If the user is actually Pro, it updates the text/icon automatically when data arrives.
               ListTile(
                 leading: Icon(
                   isPro ? Icons.workspace_premium : Icons.lock,
@@ -76,9 +122,7 @@ class SettingsScreen extends ConsumerWidget {
                   }
                 },
               ),
-
               const Divider(),
-
               ListTile(
                 title: Text(
                   'Daily Reminder',
@@ -92,29 +136,43 @@ class SettingsScreen extends ConsumerWidget {
                 title: const Text('Enable Notifications'),
                 value: settings.isReminderEnabled,
                 onChanged: (bool value) async {
-                  if (value) {
-                    final bool granted = await ref
-                        .read(notificationServiceProvider)
-                        .requestPermissions();
+                  final notificationService =
+                      ref.read(notificationServiceProvider);
+                  bool finalState = value;
 
-                    if (!granted) {
-                      if (context.mounted) {
+                  if (value) {
+                    final standardGranted =
+                        await notificationService.requestNotificationPermission();
+
+                    if (standardGranted) {
+                      await notificationService.requestExactAlarmPermission();
+                      final exactGranted =
+                          await notificationService.hasExactAlarmPermission();
+                      finalState = standardGranted && exactGranted;
+
+                      if (!exactGranted && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
+                          const SnackBar(
                             content: Text(
-                              'Permission denied. Please enable notifications in system settings.',
-                              style: TextStyle(color: colorScheme.onError),
-                            ),
-                            backgroundColor: colorScheme.error,
+                                'For best results, allow "Alarms & reminders".'),
+                            duration: Duration(seconds: 4),
                           ),
                         );
                       }
-                      return;
+                    } else {
+                      finalState = false;
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Notification permission was denied.'),
+                          ),
+                        );
+                      }
                     }
                   }
-                  ref
-                      .read(appSettingsRepositoryProvider)
-                      .updateDailyReminder(value, settings.dailyReminderTime);
+
+                  ref.read(appSettingsRepositoryProvider).updateDailyReminder(
+                      finalState, settings.dailyReminderTime);
                 },
               ),
               if (settings.isReminderEnabled)
@@ -147,9 +205,7 @@ class SettingsScreen extends ConsumerWidget {
                     }
                   },
                 ),
-
               const Divider(),
-
               ListTile(
                 title: Text(
                   'About',
@@ -174,7 +230,7 @@ class SettingsScreen extends ConsumerWidget {
                         launchUrl(Uri.parse('https://indest.ee/eula-for-5y/'));
                       },
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
               ListTile(
                 leading: const Icon(Icons.description),
                 title: const Text('Licenses'),
@@ -198,7 +254,6 @@ class SettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               const Divider(),
-
               FutureBuilder<PackageInfo>(
                 future: PackageInfo.fromPlatform(),
                 builder: (context, snapshot) {

@@ -56,28 +56,45 @@ class _FirstLaunchDialogState extends ConsumerState<FirstLaunchDialog> {
           SwitchListTile(
             title: const Text('Get Notified'),
             value: _enableNotifications,
-            onChanged: (val) async {
-              if (val) {
-                final granted = await ref
-                    .read(notificationServiceProvider)
-                    .requestPermissions();
+            onChanged: (bool value) async {
+              final notificationService =
+                  ref.read(notificationServiceProvider);
+              bool finalState = value;
 
-                if (granted) {
-                  setState(() => _enableNotifications = true);
+              if (value) {
+                final standardGranted =
+                    await notificationService.requestNotificationPermission();
+
+                if (standardGranted) {
+                  await notificationService.requestExactAlarmPermission();
+                  final exactGranted =
+                      await notificationService.hasExactAlarmPermission();
+                  finalState = standardGranted && exactGranted;
+
+                  if (!exactGranted && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'For best results, allow "Alarms & reminders".'),
+                        duration: Duration(seconds: 4),
+                      ),
+                    );
+                  }
                 } else {
-                  setState(() => _enableNotifications = false);
+                  finalState = false;
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Notifications permission denied'),
-                        backgroundColor: colorScheme.error,
+                      const SnackBar(
+                        content: Text('Notification permission was denied.'),
                       ),
                     );
                   }
                 }
-              } else {
-                setState(() => _enableNotifications = false);
               }
+              // Update the local UI state
+              setState(() {
+                _enableNotifications = finalState;
+              });
             },
           ),
         ],

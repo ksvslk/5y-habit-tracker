@@ -1,24 +1,21 @@
 import UIKit
 import Flutter
-import BackgroundAssets
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, FlutterStreamHandler, BAAssetPackManagerDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterStreamHandler {
     
-    private let CHANNEL_METHOD = "com.example.fiveyear/asset_delivery"
-    private let CHANNEL_EVENT = "com.example.fiveyear/asset_progress"
+    private let CHANNEL_METHOD = "com.indest.fiveyearhabittracker/asset_delivery"
+    private let CHANNEL_EVENT = "com.indest.fiveyearhabittracker/asset_progress"
     
+    // ODR Request Object
+    private var resourceRequest: NSBundleResourceRequest?
     private var eventSink: FlutterEventSink?
+    private var progressObservation: NSKeyValueObservation?
     
     // Hardcoded to match your Dart side "_modelFileName"
+    // Dart code does: "$packPath/$_modelFileName" -> "$packPath/model.task"
     private let MODEL_FILENAME = "model"
     private let MODEL_EXTENSION = "task"
-    
-    // Asset Pack ID - must match the assetPackID in your Manifest.json
-    private let ASSET_PACK_ID = "model_pack"
-    
-    private var downloadResultCallback: FlutterResult?
-    private var progressObservation: NSKeyValueObservation?
 
     override func application(
         _ application: UIApplication,
@@ -48,136 +45,119 @@ import BackgroundAssets
                                                binaryMessenger: controller.binaryMessenger)
         eventChannel.setStreamHandler(self)
         
-        // 3. Setup Managed Asset Pack Manager
-        if #available(iOS 17.0, *) {
-            BAAssetPackManager.shared.delegate = self
-        }
-        
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 
     // --- LOGIC: Check if Exists ---
     private func checkAssetIfExists(call: FlutterMethodCall, result: @escaping FlutterResult) {
-        guard let args = call.arguments as? [String: Any],
-              let packName = args["packName"] as? String else {
-            result(FlutterError(code: "INVALID_ARG", message: "Pack name is null", details: nil))
-            return
-        }
+            guard let args = call.arguments as? [String: Any],
+                  let packName = args["packName"] as? String else {
+                result(FlutterError(code: "INVALID_ARG", message: "Pack name is null", details: nil))
+                return
+            }
+        
+            let tags: Set<String> = [packName]
+            let request = NSBundleResourceRequest(tags: tags)
+            
+            // Check if locally available without downloading
+            request.conditionallyBeginAccessingResources { [weak self] available in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
 
-        if #available(iOS 17.0, *) {
-            Task {
-                do {
-                    // Fetch the asset pack state
-                    let assetPacks = try await BAAssetPackManager.shared.fetchAssetPacks()
-                    
-                    guard let assetPack = assetPacks.first(where: { $0.identifier == ASSET_PACK_ID }) else {
-                        DispatchQueue.main.async {
-                            result(nil)
-                        }
-                        return
-                    }
-                    
-                    // Check if downloaded
-                    if assetPack.state == .downloaded {
-                        // Find the model file in the asset pack
-                        let fileURL = assetPack.url.appendingPathComponent("\(MODEL_FILENAME).\(MODEL_EXTENSION)")
+                    if available {
+                        // CRITICAL FIX: Save the request to the class property.
+                        // This tells iOS: "Keep this file on disk, I am using it now."
+                        // If we had an old request, this replaces it (releasing the old one).
+                        self.resourceRequest = request
                         
-                        if FileManager.default.fileExists(atPath: fileURL.path) {
-                            let directory = fileURL.deletingLastPathComponent().path
-                            DispatchQueue.main.async {
-                                result(directory)
-                            }
+                        // Now it is safe to look up the path
+                        if let path = Bundle.main.path(forResource: self.MODEL_FILENAME, ofType: self.MODEL_EXTENSION) {
+                            let directory = URL(fileURLWithPath: path).deletingLastPathComponent().path
+                            result(directory)
                         } else {
-                            DispatchQueue.main.async {
-                                result(nil)
-                            }
+                            // Tag claims it's there, but file is missing (rare, but possible)
+                            self.resourceRequest = nil
+                            result(nil)
                         }
                     } else {
-                        DispatchQueue.main.async {
-                            result(nil)
-                        }
-                    }
-                } catch {
-                    DispatchQueue.main.async {
-                        result(FlutterError(code: "FETCH_FAILED",
-                                          message: error.localizedDescription,
-                                          details: nil))
+                        // Not available, no need to keep the request
+                        result(nil)
                     }
                 }
             }
-        } else {
-            result(FlutterError(code: "UNSUPPORTED_VERSION",
-                              message: "Managed Asset Packs require iOS 17.0+",
-                              details: nil))
         }
-    }
 
     // --- LOGIC: Fetch/Download ---
     private func fetchAsset(call: FlutterMethodCall, result: @escaping FlutterResult) {
-        guard let args = call.arguments as? [String: Any],
-              let packName = args["packName"] as? String else {
-            result(FlutterError(code: "INVALID_ARG", message: "Pack name is null", details: nil))
-            return
-        }
+    guard let args = call.arguments as? [String: Any],
+          let packName = args["packName"] as? String else {
+        result(FlutterError(code: "INVALID_ARG", message: "Pack name is null", details: nil))
+        return
+    }
 
-        if #available(iOS 17.0, *) {
-            downloadAssetPack(result: result)
-        } else {
-            result(FlutterError(code: "UNSUPPORTED_VERSION",
-                              message: "Managed Asset Packs require iOS 17.0+",
-                              details: nil))
-        }
+    let tags: Set<String> = [packName]
+    
+    // Clean up any existing request first
+    progressObservation?.invalidate()
+    progressObservation = nil
+    
+    resourceRequest = NSBundleResourceRequest(tags: tags)
+    
+    guard let request = resourceRequest else {
+        result(FlutterError(code: "REQUEST_FAILED", message: "Failed to create resource request", details: nil))
+        return
+    }
+
+    // Send initial 0% progress immediately
+    DispatchQueue.main.async { [weak self] in
+        self?.eventSink?(0.0)
     }
     
-    @available(iOS 17.0, *)
-    private func downloadAssetPack(result: @escaping FlutterResult) {
-        Task {
-            do {
-                // Fetch current asset packs
-                let assetPacks = try await BAAssetPackManager.shared.fetchAssetPacks()
+    // Setup Progress Monitoring BEFORE starting download
+    progressObservation = request.progress.observe(\.fractionCompleted, options: [.initial, .new]) { [weak self] progress, _ in
+        DispatchQueue.main.async {
+            guard let self = self, let sink = self.eventSink else { return }
+            let progressValue = progress.fractionCompleted
+            print("ODR Progress: \(progressValue)")  // Debug logging
+            sink(progressValue)
+        }
+    }
+
+    // Small delay to ensure observer is fully set up
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+        guard let self = self else { return }
+        
+        // Start Accessing (Downloads if needed)
+        request.beginAccessingResources { [weak self] error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
                 
-                guard let assetPack = assetPacks.first(where: { $0.identifier == ASSET_PACK_ID }) else {
-                    DispatchQueue.main.async {
-                        result(FlutterError(code: "PACK_NOT_FOUND",
-                                          message: "Asset pack '\(self.ASSET_PACK_ID)' not found",
-                                          details: nil))
-                    }
+                // Cleanup observer
+                self.progressObservation?.invalidate()
+                self.progressObservation = nil
+                
+                if let error = error {
+                    let flutterError = FlutterError(code: "DOWNLOAD_FAILED", message: error.localizedDescription, details: nil)
+                    self.eventSink?(flutterError)
+                    result(flutterError)
                     return
                 }
+
+                // Success! Send 100% progress
+                self.eventSink?(1.0)
                 
-                // Check if already downloaded
-                if assetPack.state == .downloaded {
-                    let fileURL = assetPack.url.appendingPathComponent("\(MODEL_FILENAME).\(MODEL_EXTENSION)")
-                    let directory = fileURL.deletingLastPathComponent().path
-                    DispatchQueue.main.async {
-                        result(directory)
-                    }
-                    return
-                }
-                
-                // Store callback for when download completes
-                self.downloadResultCallback = result
-                
-                // Setup progress monitoring
-                self.progressObservation = assetPack.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
-                    DispatchQueue.main.async {
-                        self?.eventSink?(progress.fractionCompleted)
-                    }
-                }
-                
-                // Request download
-                try await BAAssetPackManager.shared.requestDownload(for: assetPack)
-                
-            } catch {
-                DispatchQueue.main.async {
-                    result(FlutterError(code: "DOWNLOAD_FAILED",
-                                      message: error.localizedDescription,
-                                      details: nil))
+                // Find path
+                if let path = Bundle.main.path(forResource: self.MODEL_FILENAME, ofType: self.MODEL_EXTENSION) {
+                    let directory = URL(fileURLWithPath: path).deletingLastPathComponent().path
+                    result(directory)
+                } else {
+                    result(FlutterError(code: "FILE_NOT_FOUND", message: "Download success, but model.task not found in bundle", details: nil))
                 }
             }
         }
     }
+}
 
     // --- StreamHandler Implementation ---
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
@@ -187,68 +167,11 @@ import BackgroundAssets
 
     func onCancel(withArguments arguments: Any?) -> FlutterError? {
         self.eventSink = nil
-        progressObservation?.invalidate()
-        progressObservation = nil
         return nil
     }
     
-    // --- BAAssetPackManagerDelegate ---
-    @available(iOS 17.0, *)
-    func assetPackManager(_ manager: BAAssetPackManager,
-                         assetPack: BAAssetPack,
-                         didUpdateProgress progress: Double) {
-        DispatchQueue.main.async { [weak self] in
-            self?.eventSink?(progress)
-        }
-    }
-    
-    @available(iOS 17.0, *)
-    func assetPackManager(_ manager: BAAssetPackManager,
-                         assetPack: BAAssetPack,
-                         didCompleteDownloadAt location: URL) {
-        
-        guard assetPack.identifier == ASSET_PACK_ID else { return }
-        
-        // Cleanup
+    deinit {
+        resourceRequest?.endAccessingResources()
         progressObservation?.invalidate()
-        progressObservation = nil
-        
-        // Send 100% progress
-        DispatchQueue.main.async { [weak self] in
-            self?.eventSink?(1.0)
-            
-            // Return directory path
-            if let callback = self?.downloadResultCallback {
-                let fileURL = location.appendingPathComponent("\(self?.MODEL_FILENAME ?? "model").\(self?.MODEL_EXTENSION ?? "task")")
-                let directory = fileURL.deletingLastPathComponent().path
-                callback(directory)
-                self?.downloadResultCallback = nil
-            }
-        }
-    }
-    
-    @available(iOS 17.0, *)
-    func assetPackManager(_ manager: BAAssetPackManager,
-                         assetPack: BAAssetPack,
-                         failedWithError error: Error) {
-        
-        guard assetPack.identifier == ASSET_PACK_ID else { return }
-        
-        // Cleanup
-        progressObservation?.invalidate()
-        progressObservation = nil
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.eventSink?(FlutterError(code: "DOWNLOAD_FAILED",
-                                          message: error.localizedDescription,
-                                          details: nil))
-            
-            if let callback = self?.downloadResultCallback {
-                callback(FlutterError(code: "DOWNLOAD_FAILED",
-                                    message: error.localizedDescription,
-                                    details: nil))
-                self?.downloadResultCallback = nil
-            }
-        }
     }
 }

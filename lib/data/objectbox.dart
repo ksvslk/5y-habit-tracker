@@ -1,9 +1,6 @@
-import 'package:fiveyear/data/entities.dart';
-import 'package:fiveyear/data/objectbox.g.dart';
+import 'package:fiveyear/objectbox.g.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:objectbox/objectbox.dart'; // Add this import for the Store class
-import 'objectbox.g.dart'; // This will be generated
 
 /// Provides access to the ObjectBox Store.
 ///

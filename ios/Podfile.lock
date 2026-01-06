@@ -2,7 +2,7 @@ PODS:
   - background_downloader (0.0.1):
     - Flutter
   - Flutter (1.0.0)
-  - flutter_gemma (0.11.13):
+  - flutter_gemma (0.11.16):
     - Flutter
     - MediaPipeTasksGenAI (= 0.10.24)
     - MediaPipeTasksGenAIC (= 0.10.24)
@@ -15,32 +15,36 @@ PODS:
     - Flutter
   - flutter_timezone (0.0.1):
     - Flutter
-  - isar_flutter_libs (1.0.0):
-    - Flutter
   - large_file_handler (0.0.1):
     - Flutter
   - MediaPipeTasksGenAI (0.10.24):
     - MediaPipeTasksGenAIC (= 0.10.24)
   - MediaPipeTasksGenAIC (0.10.24)
+  - ObjectBox (5.1.1)
+  - objectbox_flutter_libs (0.0.1):
+    - Flutter
+    - ObjectBox (= 5.1.1)
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - purchases_flutter (9.10.2):
+  - permission_handler_apple (9.3.0):
     - Flutter
-    - PurchasesHybridCommon (= 17.25.0)
-  - purchases_ui_flutter (9.10.2):
+  - purchases_flutter (9.10.3):
     - Flutter
-    - PurchasesHybridCommonUI (= 17.25.0)
-  - PurchasesHybridCommon (17.25.0):
-    - RevenueCat (= 5.51.1)
-  - PurchasesHybridCommonUI (17.25.0):
-    - PurchasesHybridCommon (= 17.25.0)
-    - RevenueCatUI (= 5.51.1)
-  - RevenueCat (5.51.1)
-  - RevenueCatUI (5.51.1):
-    - RevenueCat (= 5.51.1)
+    - PurchasesHybridCommon (= 17.26.0)
+  - purchases_ui_flutter (9.10.3):
+    - Flutter
+    - PurchasesHybridCommonUI (= 17.26.0)
+  - PurchasesHybridCommon (17.26.0):
+    - RevenueCat (= 5.52.0)
+  - PurchasesHybridCommonUI (17.26.0):
+    - PurchasesHybridCommon (= 17.26.0)
+    - RevenueCatUI (= 5.52.0)
+  - RevenueCat (5.52.0)
+  - RevenueCatUI (5.52.0):
+    - RevenueCat (= 5.52.0)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -66,10 +70,11 @@ DEPENDENCIES:
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_timezone (from `.symlinks/plugins/flutter_timezone/ios`)
-  - isar_flutter_libs (from `.symlinks/plugins/isar_flutter_libs/ios`)
   - large_file_handler (from `.symlinks/plugins/large_file_handler/ios`)
+  - objectbox_flutter_libs (from `.symlinks/plugins/objectbox_flutter_libs/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
   - purchases_ui_flutter (from `.symlinks/plugins/purchases_ui_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -80,6 +85,7 @@ SPEC REPOS:
   trunk:
     - MediaPipeTasksGenAI
     - MediaPipeTasksGenAIC
+    - ObjectBox
     - PurchasesHybridCommon
     - PurchasesHybridCommonUI
     - RevenueCat
@@ -101,14 +107,16 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_timezone:
     :path: ".symlinks/plugins/flutter_timezone/ios"
-  isar_flutter_libs:
-    :path: ".symlinks/plugins/isar_flutter_libs/ios"
   large_file_handler:
     :path: ".symlinks/plugins/large_file_handler/ios"
+  objectbox_flutter_libs:
+    :path: ".symlinks/plugins/objectbox_flutter_libs/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
   purchases_flutter:
     :path: ".symlinks/plugins/purchases_flutter/ios"
   purchases_ui_flutter:
@@ -123,22 +131,24 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   background_downloader: a05c77d32a0d70615b9c04577aa203535fc924ff
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_gemma: 8654b275236dfe7a55873436d0c9dac75593687d
+  flutter_gemma: 0c8ff715e6b190e953d85aedc8decf9574c26abe
   flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
   flutter_native_splash: df59bb2e1421aa0282cb2e95618af4dcb0c56c29
   flutter_timezone: ac3da59ac941ff1c98a2e1f0293420e020120282
-  isar_flutter_libs: b69f437aeab9c521821c3f376198c4371fa21073
   large_file_handler: e3686e246052b0f03955789d3a04604574f80afe
   MediaPipeTasksGenAI: 076ba7032a6e9da16db9c7cf0c3b67c751c18bc1
   MediaPipeTasksGenAIC: ec35d9f431f6a6b651a0bc9f67a4ed149ffa575c
+  ObjectBox: 26871f7cce80a8bd2e610bf944aeaded730f6925
+  objectbox_flutter_libs: 7d74f519c4385e7404f8a024074f7175f00a4945
   package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
-  purchases_flutter: 7cbb87481a018c1bb8b4966b7d446a7c19d96d87
-  purchases_ui_flutter: 1905cebf3f46e03aeefba0f6258000f3cdd32641
-  PurchasesHybridCommon: 6a79a873ab52f777bfa36e9516f3fcd84d3b3428
-  PurchasesHybridCommonUI: 3c1f78addfb3f470713548b4eac8c59254d0efe6
-  RevenueCat: eab035bbab271faccfef5c36eaff2a1ffef14dc0
-  RevenueCatUI: c6acb3648fa58ccb4f0f178556ed0278b796234f
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
+  purchases_flutter: 0fbb7d7dae13fccf1920000120f98a8caf333765
+  purchases_ui_flutter: d22d86120d8e17b1e824d0d0a68c2f55251fa341
+  PurchasesHybridCommon: 93399cb2ba29164dbab79d6398e79f7723b41653
+  PurchasesHybridCommonUI: ebbb750fc4592418a15a16c88061dd8734a509db
+  RevenueCat: 946aceaf97c1eee083dd7fad65a0e0d0c64c837e
+  RevenueCatUI: 9e4a7e2ccff6b4fc9becd72b7efc9476c458e936
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   TensorFlowLiteC: 215ef57653dd0fa09a474e7d94d79ae64a870b28
   TensorFlowLiteSelectTfOps: c71d7dcd063f5d66ae1b9a85cc5aa993f824eff9

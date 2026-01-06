@@ -272,7 +272,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       if (mounted) {
         ref
             .read(habitRepositoryProvider)
-            .updateHabitDays(widget.habit.id, strings);
+            ?.updateHabitDays(widget.habit.id, strings);
       }
     });
   }
@@ -372,7 +372,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return habitsAsync.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text("Error: $err"))),
+      error: (err, stack) => Scaffold(body: Center(child: CircularProgressIndicator())),
       data: (allHabits) {
         // Extract the latest data for this specific habit
         final currentHabit = allHabits.firstWhere(

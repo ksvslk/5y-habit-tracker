@@ -8,6 +8,7 @@ import 'package:fiveyear/services/gemma_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart'; // REQUIRED for Message class
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 // Module-level flag to track if history has been cleared in the current app session.
 bool _hasClearedHistoryThisSession = false;

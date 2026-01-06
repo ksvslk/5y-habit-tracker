@@ -73,10 +73,10 @@ flutter {
 
 dependencies {
     // ... other dependencies like kotlin-stdlib, flutter stuff ...
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     // Google Play Asset Delivery
-    implementation("com.google.android.play:asset-delivery:2.2.2")
+    implementation("com.google.android.play:asset-delivery:2.3.0")
     
     // Kotlin Extensions (KTX) - optional but recommended for cleaner Kotlin code
-    implementation("com.google.android.play:asset-delivery-ktx:2.2.2")
+    implementation("com.google.android.play:asset-delivery-ktx:2.3.0")
 }

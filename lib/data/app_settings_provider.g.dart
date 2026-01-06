@@ -6,36 +6,91 @@ part of 'app_settings_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$appSettingsRepositoryHash() =>
-    r'627bc2c4d1792dc036d4754bba5f553400c37285';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [appSettingsRepository].
 @ProviderFor(appSettingsRepository)
-final appSettingsRepositoryProvider = Provider<AppSettingsRepository>.internal(
-  appSettingsRepository,
-  name: r'appSettingsRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$appSettingsRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final appSettingsRepositoryProvider = AppSettingsRepositoryProvider._();
 
-typedef AppSettingsRepositoryRef = ProviderRef<AppSettingsRepository>;
-String _$appSettingsHash() => r'64a42bb71e28dbee450b3cc5b7d2e4249d14dd61';
+final class AppSettingsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          AppSettingsRepository,
+          AppSettingsRepository,
+          AppSettingsRepository
+        >
+    with $Provider<AppSettingsRepository> {
+  AppSettingsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'appSettingsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
-/// See also [appSettings].
+  @override
+  String debugGetCreateSourceHash() => _$appSettingsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<AppSettingsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AppSettingsRepository create(Ref ref) {
+    return appSettingsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AppSettingsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AppSettingsRepository>(value),
+    );
+  }
+}
+
+String _$appSettingsRepositoryHash() =>
+    r'23703ec167f76ae6d7da0141c1ce786c46c24e12';
+
 @ProviderFor(appSettings)
-final appSettingsProvider = AutoDisposeStreamProvider<AppSetting>.internal(
-  appSettings,
-  name: r'appSettingsProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$appSettingsHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final appSettingsProvider = AppSettingsProvider._();
 
-typedef AppSettingsRef = AutoDisposeStreamProviderRef<AppSetting>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+final class AppSettingsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<AppSetting>,
+          AppSetting,
+          Stream<AppSetting>
+        >
+    with $FutureModifier<AppSetting>, $StreamProvider<AppSetting> {
+  AppSettingsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'appSettingsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$appSettingsHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<AppSetting> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<AppSetting> create(Ref ref) {
+    return appSettings(ref);
+  }
+}
+
+String _$appSettingsHash() => r'e2be6c9be2c799ba9e3ab9dffc9362c85556a812';

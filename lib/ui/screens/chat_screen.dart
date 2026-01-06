@@ -163,34 +163,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildMainContent(
-    ChatState state,
-    bool isDark,
-    ChatController notifier,
-    bool isSetupPhase,
-  ) {
-    if (state.isCheckingForModel)
-      return const Center(child: CircularProgressIndicator());
-    if (isSetupPhase) return _buildIntroUI(state, notifier, isDark);
-    if (state.isLoadingEngine)
-      return _buildCenteredMessage(isDark, "Waking up...", showSpinner: true);
+Widget _buildMainContent(
+  ChatState state,
+  bool isDark,
+  ChatController notifier,
+  bool isSetupPhase,
+) {
+  if (state.isCheckingForModel) return const Center(child: CircularProgressIndicator());
 
-    if (state.messages.isEmpty) return _buildEmptyState(isDark);
-
-    return ListView.builder(
-      controller: _scrollController,
-      reverse: true,
-      padding: const EdgeInsets.all(16),
-      itemCount: state.messages.length,
-      itemBuilder: (context, i) {
-        final message = state.messages[i];
-        return RepaintBoundary(
-          key: ValueKey(message.id),
-          child: _Bubble(message: message, isDark: isDark),
-        );
-      },
+  if (isSetupPhase || state.isLoadingEngine || state.messages.isEmpty) {
+    return Center( // This centers it when there is space
+      child: SingleChildScrollView( // This makes it scrollable when there isn't space
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: isSetupPhase 
+            ? _buildIntroUI(state, notifier, isDark)
+            : state.isLoadingEngine
+                ? _buildCenteredMessage(isDark, "Waking up...", showSpinner: true)
+                : _buildEmptyState(isDark),
+      ),
     );
   }
+
+  return ListView.builder(
+    controller: _scrollController,
+    reverse: true,
+    padding: const EdgeInsets.all(16),
+    itemCount: state.messages.length,
+    itemBuilder: (context, i) {
+      final message = state.messages[i];
+      return _Bubble(message: message, isDark: isDark);
+    },
+  );
+}
 
   Widget _buildBottomArea(ChatState state, ChatController notifier) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -515,13 +519,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildEmptyState(bool isDark) {
-    return SingleChildScrollView(
-      shrinkWrap: true,
-      child: _buildCenteredMessage(
-        isDark,
-        "Works 100% offline – on-device.\nReflection only. Not medical advice.\nMemory not saved. Clear with trash bin.",
-        title: "Unload Your thoughts",
-      ),
+    return _buildCenteredMessage(
+      isDark,
+      "Works 100% offline – on-device.\nReflection only. Not medical advice.\nMemory not saved. Clear with trash bin.",
+      title: "Unload Your thoughts",
     );
   }
 

@@ -12,8 +12,8 @@ import com.google.android.play.core.assetpacks.AssetPackStateUpdateListener
 import com.google.android.play.core.assetpacks.model.AssetPackStatus
 
 class MainActivity : FlutterFragmentActivity() {
-    private val CHANNEL_METHOD = "com.example.fiveyear/asset_delivery"
-    private val CHANNEL_EVENT = "com.example.fiveyear/asset_progress"
+    private val CHANNEL_METHOD = "com.indest.fiveyearhabittracker/asset_delivery"
+    private val CHANNEL_EVENT = "com.indest.fiveyearhabittracker/asset_progress"
     
     private var assetPackManager: AssetPackManager? = null
     private var eventSink: EventChannel.EventSink? = null

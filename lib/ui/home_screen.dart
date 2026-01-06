@@ -147,7 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 loading: () =>
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
                 error: (err, stack) =>
-                    SliverToBoxAdapter(child: Text('Error: $err')),
+                   SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (settings) {
                   if (settings.isFirstLaunch) {
                     return const SliverToBoxAdapter(child: SizedBox.shrink());
@@ -363,7 +363,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   heroTag: 'add_btn',
                   onPressed: () async {
                     // NEW: Check limits before adding
-                    final currentHabits = habitsAsync.valueOrNull ?? [];
+                    final currentHabits = habitsAsync.value ?? [];
 
                     // If not Pro and trying to add 3rd habit (index 2+), show paywall
                     if (!isPro && currentHabits.length >= 2) {

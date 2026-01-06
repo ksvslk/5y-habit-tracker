@@ -166,7 +166,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
       ..iconCodePoint = selectedIcon.codePoint
       ..completedDays = [];
 
-    ref.read(habitRepositoryProvider).addHabit(newHabit);
+    ref.read(habitRepositoryProvider)?.addHabit(newHabit);
     Navigator.pop(context, newHabit.id.toString()); // Return ID for scrolling
   }
 
