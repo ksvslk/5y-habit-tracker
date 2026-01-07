@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:fiveyear/data/app_settings_provider.dart';
 import 'package:fiveyear/services/notification_service.dart';
 import 'package:flutter/material.dart';
