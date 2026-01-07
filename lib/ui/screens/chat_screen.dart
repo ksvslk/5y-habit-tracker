@@ -163,38 +163,41 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-Widget _buildMainContent(
-  ChatState state,
-  bool isDark,
-  ChatController notifier,
-  bool isSetupPhase,
-) {
-  if (state.isCheckingForModel) return const Center(child: CircularProgressIndicator());
+  Widget _buildMainContent(
+    ChatState state,
+    bool isDark,
+    ChatController notifier,
+    bool isSetupPhase,
+  ) {
+    if (state.isCheckingForModel)
+      return const Center(child: CircularProgressIndicator());
 
-  if (isSetupPhase || state.isLoadingEngine || state.messages.isEmpty) {
-    return Center( // This centers it when there is space
-      child: SingleChildScrollView( // This makes it scrollable when there isn't space
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: isSetupPhase 
-            ? _buildIntroUI(state, notifier, isDark)
-            : state.isLoadingEngine
-                ? _buildCenteredMessage(isDark, "Waking up...", showSpinner: true)
-                : _buildEmptyState(isDark),
-      ),
+    if (isSetupPhase || state.isLoadingEngine || state.messages.isEmpty) {
+      return Center(
+        // This centers it when there is space
+        child: SingleChildScrollView(
+          // This makes it scrollable when there isn't space
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: isSetupPhase
+              ? _buildIntroUI(state, notifier, isDark)
+              : state.isLoadingEngine
+              ? _buildCenteredMessage(isDark, "Waking up...", showSpinner: true)
+              : _buildEmptyState(isDark),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      reverse: true,
+      padding: const EdgeInsets.all(16),
+      itemCount: state.messages.length,
+      itemBuilder: (context, i) {
+        final message = state.messages[i];
+        return _Bubble(message: message, isDark: isDark);
+      },
     );
   }
-
-  return ListView.builder(
-    controller: _scrollController,
-    reverse: true,
-    padding: const EdgeInsets.all(16),
-    itemCount: state.messages.length,
-    itemBuilder: (context, i) {
-      final message = state.messages[i];
-      return _Bubble(message: message, isDark: isDark);
-    },
-  );
-}
 
   Widget _buildBottomArea(ChatState state, ChatController notifier) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -439,9 +442,11 @@ Widget _buildMainContent(
                       Uri.parse('https://ai.google.dev/gemma/terms'),
                     ),
                 ),
-           
+
                 const TextSpan(text: ". "),
-                TextSpan(text: "${Platform.isIOS ? 'Please read also our ' : ''}"),
+                TextSpan(
+                  text: "${Platform.isIOS ? 'Please read also our ' : ''}",
+                ),
                 TextSpan(
                   text: "${Platform.isIOS ? 'EULA' : ''}",
                   style: const TextStyle(
@@ -468,7 +473,6 @@ Widget _buildMainContent(
                     ),
                 ),
                 const TextSpan(text: "."),
-
               ],
             ),
           ),

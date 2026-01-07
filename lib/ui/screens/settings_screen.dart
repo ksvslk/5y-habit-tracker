@@ -6,8 +6,10 @@ import 'package:fiveyear/data/subscription_service.dart';
 import 'package:fiveyear/services/notification_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -44,7 +46,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   /// Silently checks permissions and updates the app state if it's out of sync.
   Future<void> _syncNotificationStatus() async {
-    final settings = ref.read(appSettingsProvider).when(
+    final settings = ref
+        .read(appSettingsProvider)
+        .when(
           data: (data) => data,
           loading: () => null,
           error: (_, __) => null,
@@ -55,8 +59,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     }
 
     final notificationService = ref.read(notificationServiceProvider);
-    
-    final standardGranted = await notificationService.hasNotificationPermission();
+
+    final standardGranted = await notificationService
+        .hasNotificationPermission();
     final exactGranted = await notificationService.hasExactAlarmPermission();
 
     if (!standardGranted || !exactGranted) {
@@ -136,43 +141,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 title: const Text('Enable Notifications'),
                 value: settings.isReminderEnabled,
                 onChanged: (bool value) async {
-                  final notificationService =
-                      ref.read(notificationServiceProvider);
+                  final notificationService = ref.read(
+                    notificationServiceProvider,
+                  );
                   bool finalState = value;
 
                   if (value) {
-                    final standardGranted =
-                        await notificationService.requestNotificationPermission();
+                    final standardGranted = await notificationService
+                        .requestNotificationPermission();
 
                     if (standardGranted) {
                       await notificationService.requestExactAlarmPermission();
-                      final exactGranted =
-                          await notificationService.hasExactAlarmPermission();
+                      final exactGranted = await notificationService
+                          .hasExactAlarmPermission();
                       finalState = standardGranted && exactGranted;
 
                       if (!exactGranted && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                                'For best results, allow "Alarms & reminders".'),
+                              'For best results, allow "Alarms & reminders".',
+                            ),
                             duration: Duration(seconds: 4),
                           ),
                         );
                       }
                     } else {
+                      final bool? result = await notificationService
+                          .flutterLocalNotificationsPlugin
+                          .resolvePlatformSpecificImplementation<
+                            IOSFlutterLocalNotificationsPlugin
+                          >()
+                          ?.requestPermissions(
+                            alert: true,
+                            badge: true,
+                            sound: true,
+                          );
+
                       finalState = false;
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Notification permission was denied.'),
+                            content: Text(
+                              'Notification permission was denied.',
+                            ),
                           ),
                         );
                       }
                     }
                   }
 
-                  ref.read(appSettingsRepositoryProvider).updateDailyReminder(
-                      finalState, settings.dailyReminderTime);
+                  ref
+                      .read(appSettingsRepositoryProvider)
+                      .updateDailyReminder(
+                        finalState,
+                        settings.dailyReminderTime,
+                      );
                 },
               ),
               if (settings.isReminderEnabled)

@@ -147,7 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 loading: () =>
                     const SliverToBoxAdapter(child: SizedBox.shrink()),
                 error: (err, stack) =>
-                   SliverToBoxAdapter(child: SizedBox.shrink()),
+                    SliverToBoxAdapter(child: SizedBox.shrink()),
                 data: (settings) {
                   if (settings.isFirstLaunch) {
                     return const SliverToBoxAdapter(child: SizedBox.shrink());

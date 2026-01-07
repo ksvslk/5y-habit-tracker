@@ -49,16 +49,16 @@ class NotificationService {
 
     const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin,
-    );
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsDarwin,
+        );
 
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
@@ -93,7 +93,8 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
   }
 
@@ -172,14 +173,33 @@ class NotificationService {
 
   /// Silently checks if standard notification permission is granted.
   Future<bool> hasNotificationPermission() async {
-    final status = await Permission.notification.status;
-    return status.isGranted;
+    if (Platform.isIOS) {
+      final NotificationsEnabledOptions? result =
+          await flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin
+              >()
+              ?.checkPermissions();
+      return result?.isEnabled ?? false;
+    } else {
+      final status = await Permission.notification.status;
+      return status.isGranted;
+    }
   }
 
   /// Requests standard notification permission. Returns true if granted.
   Future<bool> requestNotificationPermission() async {
-    final status = await Permission.notification.request();
-    return status.isGranted;
+    if (Platform.isIOS) {
+      final bool? result = await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      return result ?? false;
+    } else {
+      final status = await Permission.notification.request();
+      return status.isGranted;
+    }
   }
 
   /// Silently checks if the exact alarm permission is granted.
