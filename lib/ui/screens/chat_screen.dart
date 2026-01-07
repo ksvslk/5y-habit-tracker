@@ -327,7 +327,9 @@ Widget _buildMainContent(
         border: Border.all(color: colorScheme.primary, width: 2),
       ),
       child: InkWell(
-        onTap: isDownloading ? null : notifier.downloadAndStart,
+        onTap: isDownloading
+            ? null
+            : () => _showDownloadConfirmationDialog(context, notifier),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
@@ -372,6 +374,35 @@ Widget _buildMainContent(
             );
           },
         ),
+      ),
+    );
+  }
+
+  void _showDownloadConfirmationDialog(
+    BuildContext context,
+    ChatController notifier,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("Download Required"),
+        content: const Text(
+          "To continue, a one-time download of ~1.02GB is required. Please ensure you have a stable internet connection.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              notifier.downloadAndStart();
+            },
+            child: const Text("Start Download"),
+          ),
+        ],
       ),
     );
   }
